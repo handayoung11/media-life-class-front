@@ -2,15 +2,19 @@ import { useState } from 'react';
 import { Leaf, Sparkles, ChevronRight } from 'lucide-react';
 
 interface LoginPageProps {
-  onLogin: (provider: 'kakao' | 'google') => void;
+  onLogin: (provider: 'kakao' | 'google' | '' | null) => void;
 }
 
 export function LoginPage({ onLogin }: LoginPageProps) {
   const [pending, setPending] = useState<'kakao' | 'google' | null>(null);
 
-  const handle = (provider: 'kakao' | 'google') => {
+  const handle = (provider: 'kakao' | 'google' | null) => {
     setPending(provider);
-    setTimeout(() => onLogin(provider), 700);
+    if (provider === null) {
+      onLogin('');
+      // onLogin(provider);
+    }
+    else setTimeout(() => onLogin(provider), 700);
   };
 
   return (
@@ -80,7 +84,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         </button>
 
         <button
-          onClick={() => handle('kakao')}
+          onClick={() => handle(null)}
           disabled={pending !== null}
           className="btn-base w-full h-12 text-sage-500 text-sm font-medium hover:text-sage-700"
         >
@@ -90,7 +94,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       </div>
 
       <p className="mt-6 text-center text-[11px] text-sage-400 leading-relaxed">
-        로그인 시 미라클 클럽 이용약관 및 개인정보처리방침에 동의합니다.
+        로그인 시 미라클 이용약관 및 개인정보처리방침에 동의합니다.
         <br />
         모든 데이터는 브라우저에만 저장됩니다.
       </p>

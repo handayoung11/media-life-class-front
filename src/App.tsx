@@ -16,6 +16,7 @@ import {
 
 export default function App() {
   const [loggedIn, setLoggedIn] = useState(false);
+  const [provider, setProvider] = useState(null as 'kakao' | 'google' | '' | null);
   const [tab, setTab] = useState<TabKey>('home');
   const [records, setRecords] = useState<DayRecord[]>(mockRecords);
   const [feed, setFeed] = useState<FeedPost[]>(mockFeed);
@@ -23,8 +24,9 @@ export default function App() {
 
   const today = records.find((r) => r.date === todayKey()) ?? null;
 
-  const handleLogin = () => {
-    setLoggedIn(true);
+  const handleLogin = (provider: 'kakao' | 'google' | null | '') => {
+    setLoggedIn(provider !== null && provider !== '');
+    setProvider(provider);
     setTab('home');
   };
 
@@ -96,7 +98,7 @@ export default function App() {
     );
   };
 
-  if (!loggedIn) {
+  if (provider === null) {
     return (
       <div className="min-h-screen flex items-stretch justify-center bg-[#eef1ea]">
         <LoginPage onLogin={handleLogin} />
