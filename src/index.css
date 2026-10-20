@@ -1,0 +1,44 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #eef1ea;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: #243a21;
+}
+
+::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
+
+@layer components {
+  .app-shell {
+    @apply mx-auto max-w-md min-h-screen bg-cream-50 relative shadow-float overflow-hidden w-full;
+  }
+  .card {
+    @apply rounded-3xl bg-white/90 backdrop-blur-sm shadow-card border border-sage-100/70;
+  }
+  .btn-base {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl font-semibold transition-all duration-200 active:scale-[0.97] disabled:opacity-50;
+  }
+}
+
+.no-tap-highlight {
+  -webkit-tap-highlight-color: transparent;
+}
