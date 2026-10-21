@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Heart, Send, MoreHorizontal, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Heart, Send, MoreHorizontal, AlertCircle, LogIn } from 'lucide-react';
 import { DonutChart } from './DonutChart';
-import { api } from '@/lib/api';
+import { api, isLoggedIn } from '@/lib/api';
 import { FeedPost, CATEGORY_META, Comment } from '@/lib/types';
 
 export function ClubFeed() {
+  const navigate = useNavigate();
+  const guest = !isLoggedIn();
   const [feed, setFeed] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +38,7 @@ export function ClubFeed() {
   }, []);
 
   const handleLike = (id: string) => {
+    if (guest) return;
     setFeed((prev) =>
       prev.map((p) =>
         p.id === id ? { ...p, liked: !p.liked, likes: p.liked ? p.likes - 1 : p.likes + 1 } : p
@@ -50,6 +54,7 @@ export function ClubFeed() {
   };
 
   const handleComment = (id: string, text: string) => {
+    if (guest) return;
     setFeed((prev) =>
       prev.map((p) =>
         p.id === id
@@ -107,11 +112,30 @@ export function ClubFeed() {
         <p className="text-xs text-sage-400 mt-0.5">함께 기적을 만드는 사람들</p>
       </header>
 
+      {guest && (
+        <div className="mb-4 rounded-2xl bg-gradient-to-br from-sage-100 to-cream-100 border border-sage-200 p-4 flex items-center gap-3 animate-slide-up">
+          <div className="w-10 h-10 rounded-2xl bg-sage-500 text-white flex items-center justify-center shrink-0">
+            <LogIn className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-sage-800">둘러보기 모드</p>
+            <p className="text-xs text-sage-500 mt-0.5">피드는 볼 수 있어요. 응원·댓글은 로그인 후 가능해요.</p>
+          </div>
+          <button
+            onClick={() => navigate('/login')}
+            className="btn-base h-9 px-4 bg-sage-600 text-white text-xs shrink-0"
+          >
+            로그인
+          </button>
+        </div>
+      )}
+
       <div className="space-y-4">
         {feed.map((post) => (
           <FeedCard
             key={post.id}
             post={post}
+            guest={guest}
             onLike={() => handleLike(post.id)}
             onComment={(text) => handleComment(post.id, text)}
           />
@@ -123,10 +147,12 @@ export function ClubFeed() {
 
 function FeedCard({
   post,
+  guest,
   onLike,
   onComment,
 }: {
   post: FeedPost;
+  guest: boolean;
   onLike: () => void;
   onComment: (text: string) => void;
 }) {
@@ -185,7 +211,11 @@ function FeedCard({
       </div>
 
       <div className="flex items-center justify-between px-3.5 py-2 border-t border-sage-50">
-        <button onClick={onLike} className="flex items-center gap-1.5 no-tap-highlight group">
+        <button
+          onClick={onLike}
+          disabled={guest}
+          className="flex items-center gap-1.5 no-tap-highlight group disabled:opacity-50"
+        >
           <Heart
             className={`w-5 h-5 transition-all ${
               post.liked
@@ -213,9 +243,10 @@ function FeedCard({
           <input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="따뜻한 댓글 남기기..."
+            placeholder={guest ? '로그인 후 댓글을 남길 수 있어요' : '따뜻한 댓글 남기기...'}
             maxLength={60}
-            className="flex-1 rounded-full bg-sage-50 border border-sage-100 px-4 py-2 text-[13px] text-sage-800 placeholder:text-sage-300 focus:outline-none focus:ring-2 focus:ring-sage-300 transition"
+            disabled={guest}
+            className="flex-1 rounded-full bg-sage-50 border border-sage-100 px-4 py-2 text-[13px] text-sage-800 placeholder:text-sage-300 focus:outline-none focus:ring-2 focus:ring-sage-300 transition disabled:opacity-60"
           />
           <button
             type="submit"

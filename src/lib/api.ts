@@ -21,7 +21,8 @@ api.interceptors.response.use(
   (error: AxiosError) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
-      if (window.location.pathname !== '/login') {
+      const path = window.location.pathname;
+      if (path !== '/login' && !path.startsWith('/dashboard')) {
         window.location.replace('/login');
       }
     }

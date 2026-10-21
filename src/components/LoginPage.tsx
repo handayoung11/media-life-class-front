@@ -90,7 +90,7 @@ export function LoginPage() {
           </button>
 
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/dashboard?tab=club')}
             disabled={pending !== null}
             className="btn-base w-full h-12 text-sage-500 text-sm font-medium hover:text-sage-700"
           >
