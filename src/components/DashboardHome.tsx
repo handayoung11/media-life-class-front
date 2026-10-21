@@ -1,14 +1,13 @@
 import { Smartphone, Dumbbell, BookOpen, TrendingDown, Sparkles } from 'lucide-react';
 import { DonutChart } from './DonutChart';
-import { DayRecord, User, CATEGORY_META } from '@/lib/types';
+import { DayRecord, CATEGORY_META, mockUser } from '@/lib/types';
 
 interface DashboardHomeProps {
   today: DayRecord | null;
   goalMediaMin: number;
-  user: User;
 }
 
-export function DashboardHome({ today, goalMediaMin, user }: DashboardHomeProps) {
+export function DashboardHome({ today, goalMediaMin }: DashboardHomeProps) {
   const media = today?.mediaMin ?? 0;
   const exercise = today?.exerciseMin ?? 0;
   const study = today?.studyMin ?? 0;
@@ -31,14 +30,14 @@ export function DashboardHome({ today, goalMediaMin, user }: DashboardHomeProps)
         <div>
           <p className="text-xs text-sage-400 font-medium">{greeting}</p>
           <h2 className="font-display text-xl font-semibold text-sage-800 mt-0.5">
-            {user.nickname}님
+            {mockUser.nickname}님
           </h2>
         </div>
         <div
           className="w-11 h-11 rounded-2xl flex items-center justify-center text-white font-semibold shadow-soft"
-          style={{ backgroundColor: user.avatarColor }}
+          style={{ backgroundColor: mockUser.avatarColor }}
         >
-          {user.avatarInitial}
+          {mockUser.avatarInitial}
         </div>
       </header>
 
