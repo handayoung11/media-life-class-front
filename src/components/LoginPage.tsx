@@ -1,20 +1,19 @@
 import { useState } from 'react';
 import { Leaf, Sparkles, ChevronRight } from 'lucide-react';
+import { LoginProvider } from '@/lib/api';
 
 interface LoginPageProps {
-  onLogin: (provider: 'kakao' | 'google' | '' | null) => void;
+  onLogin: (provider: LoginProvider) => void;
+  error?: string | null;
 }
 
-export function LoginPage({ onLogin }: LoginPageProps) {
-  const [pending, setPending] = useState<'kakao' | 'google' | null>(null);
+export function LoginPage({ onLogin, error }: LoginPageProps) {
+  const [pending, setPending] = useState<LoginProvider | null>(null);
 
-  const handle = (provider: 'kakao' | 'google' | null) => {
+  const handle = (provider: LoginProvider) => {
     setPending(provider);
-    if (provider === null) {
-      onLogin('');
-      // onLogin(provider);
-    }
-    else setTimeout(() => onLogin(provider), 700);
+    // 실제 서버 요청은 비동기이므로 살짝 지연 후 호출
+    setTimeout(() => onLogin(provider), 400);
   };
 
   return (
@@ -37,7 +36,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         <p className="mt-5 text-[15px] leading-relaxed text-sage-600 max-w-[18rem]">
           도파민 중독의 미디어 라이프를 클린하게,
           <br />
-          오늘부터 시작되는 <span className="text-sage-800 font-semibold">기적 같은 기록 갓생</span>
+          오늘부터 시작되는{' '}
+          <span className="text-sage-800 font-semibold">기적 같은 기록 갓생</span>
         </p>
 
         <div className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-sage-100 px-3.5 py-1.5 text-xs font-medium text-sage-700">
@@ -47,6 +47,12 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       </div>
 
       <div className="mt-auto space-y-3 animate-slide-up" style={{ animationDelay: '0.15s' }}>
+        {error && (
+          <div className="rounded-2xl bg-error-500/10 border border-error-500/30 px-4 py-2.5 text-xs text-error-600 font-medium text-center">
+            {error}
+          </div>
+        )}
+
         <button
           onClick={() => handle('kakao')}
           disabled={pending !== null}
@@ -55,7 +61,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           {pending === 'kakao' ? (
             <span className="flex items-center gap-2">
               <span className="w-4 h-4 rounded-full border-2 border-[#191600]/30 border-t-[#191600] animate-spin" />
-              연결 중...
+              서버에 연결 중...
             </span>
           ) : (
             <span className="flex items-center gap-2.5">
@@ -73,7 +79,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           {pending === 'google' ? (
             <span className="flex items-center gap-2">
               <span className="w-4 h-4 rounded-full border-2 border-sage-300 border-t-sage-600 animate-spin" />
-              연결 중...
+              서버에 연결 중...
             </span>
           ) : (
             <span className="flex items-center gap-2.5">
@@ -84,7 +90,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         </button>
 
         <button
-          onClick={() => handle(null)}
+          onClick={() => handle('guest')}
           disabled={pending !== null}
           className="btn-base w-full h-12 text-sage-500 text-sm font-medium hover:text-sage-700"
         >
@@ -96,7 +102,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       <p className="mt-6 text-center text-[11px] text-sage-400 leading-relaxed">
         로그인 시 미라클 이용약관 및 개인정보처리방침에 동의합니다.
         <br />
-        모든 데이터는 브라우저에만 저장됩니다.
+        기록은 안전하게 서버에 저장됩니다.
       </p>
     </div>
   );

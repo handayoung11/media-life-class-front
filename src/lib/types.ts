@@ -30,17 +30,13 @@ export interface FeedPost {
 }
 
 export interface User {
+  id: string;
   nickname: string;
   email: string;
   avatarColor: string;
   avatarInitial: string;
   goalMediaMin: number;
-}
-
-export interface MockData {
-  user: User;
-  records: DayRecord[];
-  feed: FeedPost[];
+  provider: string;
 }
 
 export const MEDIA_APPS = [
@@ -75,70 +71,20 @@ export function todayKey(): string {
   return todayISO();
 }
 
-export const mockUser: User = {
-  nickname: '초록빛 갓생러',
-  email: 'greenlife@example.com',
-  avatarColor: '#5d8a52',
-  avatarInitial: '초',
-  goalMediaMin: 120,
-};
+// 닉네임/아바타 생성용 풀
+const NICK_PREFIX = ['초록빛', '맑은', '단디', '새벽', '미라클러', '청량한', '느린', '꾸준한'];
+const NICK_SUFFIX = ['갓생러', '디톡스', '러', '공부러', '워커', '러너', '리더', '메이커'];
+const AVATAR_COLORS = ['#5d8a52', '#7ba6c7', '#c97b5a', '#d9a441', '#8a7bc7', '#c75d8a'];
+const INITIALS = ['초', '맑', '단', '새', '미', '청', '느', '꾸', '라', '온'];
 
-export const mockRecords: DayRecord[] = [
-  { date: '2026-10-14', mediaMin: 180, exerciseMin: 30, studyMin: 60, comment: '유튜브를 조금 줄였다' },
-  { date: '2026-10-15', mediaMin: 150, exerciseMin: 45, studyMin: 80, comment: '산책이 제일 좋아' },
-  { date: '2026-10-16', mediaMin: 200, exerciseMin: 20, studyMin: 40, comment: '오늘은 조금 방황' },
-  { date: '2026-10-17', mediaMin: 120, exerciseMin: 50, studyMin: 90, comment: '집중 최고' },
-  { date: '2026-10-18', mediaMin: 90, exerciseMin: 60, studyMin: 100, comment: '갓생 갓생' },
-  { date: '2026-10-19', mediaMin: 110, exerciseMin: 40, studyMin: 70, comment: '안정적인 하루' },
-  { date: todayKey(), mediaMin: 84, exerciseMin: 35, studyMin: 55, comment: '도파민 디톡스 시작' },
-];
-
-export const mockFeed: FeedPost[] = [
-  {
-    id: 'f1',
-    author: '미라클러 라온',
-    avatarColor: '#7ba6c7',
-    avatarInitial: '라',
-    mediaMin: 60,
-    exerciseMin: 55,
-    studyMin: 120,
-    caption: '오늘 도서관 2시간! 미디어는 딱 1시간만. 기적이 따로 없다, 매일이 기적 🌿',
-    likes: 24,
-    liked: false,
-    timeAgo: '방금 전',
-    comments: [
-      { id: 'c1', author: '초록잎', text: '대박 진짜 갓생이네요!' },
-    ],
-  },
-  {
-    id: 'f2',
-    author: '단디_디톡스',
-    avatarColor: '#c97b5a',
-    avatarInitial: '단',
-    mediaMin: 95,
-    exerciseMin: 80,
-    studyMin: 40,
-    caption: '저녁 산책 80분 + 인스타 줄이기 성공. 마음이 점점 맑아져요 ☁️→☀️',
-    likes: 41,
-    liked: false,
-    timeAgo: '1시간 전',
-    comments: [
-      { id: 'c2', author: '미라밸러', text: '산책 루틴 궁금해요!' },
-      { id: 'c3', author: '단디_디톡스', text: '집 근처 공원 한 바퀴예요 🌳' },
-    ],
-  },
-  {
-    id: 'f3',
-    author: '새벽공부러',
-    avatarColor: '#d9a441',
-    avatarInitial: '새',
-    mediaMin: 40,
-    exerciseMin: 25,
-    studyMin: 180,
-    caption: '새벽 5시 기상 3시간 몰입. 미디어는 알림 꺼놓고 시작하는 게 정답이었음 ✨',
-    likes: 67,
-    liked: false,
-    timeAgo: '3시간 전',
-    comments: [],
-  },
-];
+export function generateProfileFromEmail(email: string): {
+  nickname: string;
+  avatarColor: string;
+  avatarInitial: string;
+} {
+  const seed = email.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  const nickname = `${NICK_PREFIX[seed % NICK_PREFIX.length]}${NICK_SUFFIX[(seed >> 3) % NICK_SUFFIX.length]}`;
+  const avatarColor = AVATAR_COLORS[seed % AVATAR_COLORS.length];
+  const avatarInitial = INITIALS[(seed >> 5) % INITIALS.length];
+  return { nickname, avatarColor, avatarInitial };
+}
