@@ -1,15 +1,105 @@
-import { useState } from 'react';
-import { Heart, Send, MoreHorizontal } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Heart, Send, MoreHorizontal, AlertCircle } from 'lucide-react';
 import { DonutChart } from './DonutChart';
+import { api } from '@/lib/api';
 import { FeedPost, CATEGORY_META, Comment } from '@/lib/types';
 
-interface ClubFeedProps {
-  feed: FeedPost[];
-  onLike: (id: string) => void;
-  onComment: (id: string, text: string) => void;
-}
+export function ClubFeed() {
+  const [feed, setFeed] = useState<FeedPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-export function ClubFeed({ feed, onLike, onComment }: ClubFeedProps) {
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await api.get<FeedPost[]>('/api/feed');
+        if (!cancelled) {
+          setFeed(res.data);
+          setError(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error ? err.message : '피드를 불러오지 못했습니다.'
+          );
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleLike = (id: string) => {
+    setFeed((prev) =>
+      prev.map((p) =>
+        p.id === id ? { ...p, liked: !p.liked, likes: p.liked ? p.likes - 1 : p.likes + 1 } : p
+      )
+    );
+    api.post(`/api/feed/${id}/like`).catch(() => {
+      setFeed((prev) =>
+        prev.map((p) =>
+          p.id === id ? { ...p, liked: !p.liked, likes: p.liked ? p.likes - 1 : p.likes + 1 } : p
+        )
+      );
+    });
+  };
+
+  const handleComment = (id: string, text: string) => {
+    setFeed((prev) =>
+      prev.map((p) =>
+        p.id === id
+          ? { ...p, comments: [...p.comments, { id: `cm-${Date.now()}`, author: '나', text }] }
+          : p
+      )
+    );
+    api.post(`/api/feed/${id}/comments`, { text }).catch(() => {});
+  };
+
+  if (loading) {
+    return (
+      <div className="px-4 pt-6 pb-28 animate-fade-in">
+        <div className="space-y-4">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="card p-4 h-64 animate-pulse bg-sage-50" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="px-4 pt-6 pb-28 animate-fade-in">
+        <div className="card p-6 flex flex-col items-center gap-3 text-center">
+          <AlertCircle className="w-8 h-8 text-accent-clay" />
+          <p className="text-sm text-sage-600 font-medium">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="btn-base h-10 px-5 bg-sage-600 text-white text-sm"
+          >
+            다시 시도
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (feed.length === 0) {
+    return (
+      <div className="px-4 pt-6 pb-28 animate-fade-in">
+        <div className="card p-8 flex flex-col items-center gap-3 text-center">
+          <p className="text-sm text-sage-500 font-medium">아직 피드에 게시물이 없어요.</p>
+          <p className="text-xs text-sage-400">오늘의 기록을 남기면 피드에 공유돼요!</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="px-4 pt-6 pb-28 animate-fade-in">
       <header className="mb-4 px-1">
@@ -22,8 +112,8 @@ export function ClubFeed({ feed, onLike, onComment }: ClubFeedProps) {
           <FeedCard
             key={post.id}
             post={post}
-            onLike={() => onLike(post.id)}
-            onComment={(text) => onComment(post.id, text)}
+            onLike={() => handleLike(post.id)}
+            onComment={(text) => handleComment(post.id, text)}
           />
         ))}
       </div>
@@ -95,10 +185,7 @@ function FeedCard({
       </div>
 
       <div className="flex items-center justify-between px-3.5 py-2 border-t border-sage-50">
-        <button
-          onClick={onLike}
-          className="flex items-center gap-1.5 no-tap-highlight group"
-        >
+        <button onClick={onLike} className="flex items-center gap-1.5 no-tap-highlight group">
           <Heart
             className={`w-5 h-5 transition-all ${
               post.liked
@@ -155,8 +242,7 @@ function Stat({ label, value, color }: { label: string; value: string; color: st
 function CommentRow({ c }: { c: Comment }) {
   return (
     <p className="text-[12px] text-sage-600 leading-relaxed">
-      <span className="font-semibold text-sage-700">{c.author}</span>{' '}
-      {c.text}
+      <span className="font-semibold text-sage-700">{c.author}</span> {c.text}
     </p>
   );
 }

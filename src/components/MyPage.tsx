@@ -1,37 +1,118 @@
-import { useState } from 'react';
-import { Target, Pencil, Check, LogOut, Settings, ChevronRight } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Target, Pencil, Check, LogOut, Settings, ChevronRight, AlertCircle } from 'lucide-react';
 import { WeeklyBarChart } from './WeeklyBarChart';
-import { DayRecord, User, CATEGORY_META } from '@/lib/types';
+import { api } from '@/lib/api';
+import {
+  DayRecord,
+  User,
+  CATEGORY_META,
+  DashboardResponse,
+} from '@/lib/types';
 
 interface MyPageProps {
-  user: User;
-  records: DayRecord[];
-  onSaveGoal: (min: number) => void;
   onLogout: () => void;
 }
 
 const DAYS = ['월', '화', '수', '목', '금', '토', '일'];
 
-export function MyPage({ user, records, onSaveGoal, onLogout }: MyPageProps) {
+export function MyPage({ onLogout }: MyPageProps) {
+  const [data, setData] = useState<DashboardResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
-  const [goalH, setGoalH] = useState(String(Math.floor(user.goalMediaMin / 60)));
-  const [goalM, setGoalM] = useState(String(user.goalMediaMin % 60));
+  const [goalH, setGoalH] = useState('2');
+  const [goalM, setGoalM] = useState('0');
+  const [savingGoal, setSavingGoal] = useState(false);
 
-  const weekly = buildWeekly(records);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get<DashboardResponse>('/dashboard');
+      setData(res.data);
+      const goal = res.data.summary.goalMediaMin || res.data.user.goalMediaMin || 120;
+      setGoalH(String(Math.floor(goal / 60)));
+      setGoalM(String(goal % 60));
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '내 정보를 불러오지 못했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const saveGoal = async () => {
+    const m = (parseInt(goalH || '0', 10) || 0) * 60 + (parseInt(goalM || '0', 10) || 0);
+    const goal = Math.max(15, m);
+    try {
+      setSavingGoal(true);
+      await api.put('/api/user/goal', { goalMediaMin: goal });
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              summary: { ...prev.summary, goalMediaMin: goal },
+              user: { ...prev.user, goalMediaMin: goal },
+            }
+          : prev
+      );
+      setEditing(false);
+    } catch {
+      setError('목표 저장에 실패했습니다.');
+    } finally {
+      setSavingGoal(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="px-5 pt-6 pb-28 animate-fade-in space-y-5">
+        <div className="h-6 w-24 bg-sage-100 rounded animate-pulse" />
+        <div className="card p-5 h-24 animate-pulse bg-sage-50" />
+        <div className="card p-5 h-48 animate-pulse bg-sage-50" />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="px-5 pt-6 pb-28 animate-fade-in">
+        <div className="card p-6 flex flex-col items-center gap-3 text-center">
+          <AlertCircle className="w-8 h-8 text-accent-clay" />
+          <p className="text-sm text-sage-600 font-medium">{error ?? '데이터가 없습니다.'}</p>
+          <button
+            onClick={fetchData}
+            className="btn-base h-10 px-5 bg-sage-600 text-white text-sm"
+          >
+            다시 시도
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const user: User = data.user;
+  const records: DayRecord[] = data.recentRecords.map((r) => ({
+    date: r.date,
+    mediaMin: r.mediaMin,
+    exerciseMin: r.exerciseMin,
+    studyMin: r.studyMin,
+    comment: r.comment,
+  }));
+  const goalMediaMin = data.summary.goalMediaMin || user.goalMediaMin || 120;
+
+  const weekly = buildWeekly(records, data.weekly);
   const totals = weekly.reduce(
     (a, w) => ({
       media: a.media + w.media,
-      exercise: a.exercise + w.exercise,
+      exercise: a.exercise + w.study,
       study: a.study + w.study,
     }),
     { media: 0, exercise: 0, study: 0 }
   );
-
-  const saveGoal = () => {
-    const m = (parseInt(goalH || '0', 10) || 0) * 60 + (parseInt(goalM || '0', 10) || 0);
-    onSaveGoal(Math.max(15, m));
-    setEditing(false);
-  };
 
   return (
     <div className="px-5 pt-6 pb-28 animate-fade-in space-y-5">
@@ -48,7 +129,9 @@ export function MyPage({ user, records, onSaveGoal, onLogout }: MyPageProps) {
           {user.avatarInitial}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-display text-lg font-semibold text-sage-800 truncate">{user.nickname}</p>
+          <p className="font-display text-lg font-semibold text-sage-800 truncate">
+            {user.nickname}
+          </p>
           <p className="text-xs text-sage-400 truncate">{user.email}</p>
           <span className="inline-flex items-center gap-1 mt-1.5 rounded-full bg-sage-100 px-2.5 py-0.5 text-[11px] font-medium text-sage-700">
             <span className="w-1.5 h-1.5 rounded-full bg-sage-500" />
@@ -90,9 +173,16 @@ export function MyPage({ user, records, onSaveGoal, onLogout }: MyPageProps) {
             <div className="flex gap-2">
               <button
                 onClick={saveGoal}
+                disabled={savingGoal}
                 className="btn-base flex-1 h-11 bg-sage-600 text-white text-sm"
               >
-                <Check className="w-4 h-4" /> 저장
+                {savingGoal ? (
+                  <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                ) : (
+                  <>
+                    <Check className="w-4 h-4" /> 저장
+                  </>
+                )}
               </button>
               <button
                 onClick={() => setEditing(false)}
@@ -110,7 +200,7 @@ export function MyPage({ user, records, onSaveGoal, onLogout }: MyPageProps) {
             <div className="text-left">
               <p className="text-xs text-sage-400">하루 미디어 제한</p>
               <p className="font-display text-lg font-semibold text-sage-800 mt-0.5">
-                {Math.floor(user.goalMediaMin / 60)}시간 {user.goalMediaMin % 60}분
+                {Math.floor(goalMediaMin / 60)}시간 {goalMediaMin % 60}분
               </p>
             </div>
             <Pencil className="w-4 h-4 text-sage-400" />
@@ -164,7 +254,10 @@ function NumberBox({
 function WeeklyTotal({ label, value, color }: { label: string; value: number; color: string }) {
   return (
     <div className="text-center">
-      <span className="inline-block w-1.5 h-1.5 rounded-full mb-1" style={{ backgroundColor: color }} />
+      <span
+        className="inline-block w-1.5 h-1.5 rounded-full mb-1"
+        style={{ backgroundColor: color }}
+      />
       <p className="text-[11px] text-sage-400">{label}</p>
       <p className="font-display text-base font-semibold text-sage-800">
         {Math.floor(value / 60)}h {value % 60}m
@@ -173,9 +266,22 @@ function WeeklyTotal({ label, value, color }: { label: string; value: number; co
   );
 }
 
-function buildWeekly(records: DayRecord[]) {
+function buildWeekly(
+  records: DayRecord[],
+  weekly: { date: string; media: number; exercise: number; study: number }[] | undefined
+) {
+  if (weekly && weekly.length > 0) {
+    return weekly.map((w, i) => ({
+      label: DAYS[i % 7],
+      media: w.media,
+      exercise: w.exercise,
+      study: w.study,
+      isToday: i === (new Date().getDay() + 6) % 7,
+    }));
+  }
+
   const today = new Date();
-  const todayIdx = (today.getDay() + 6) % 7; // 0 = Monday
+  const todayIdx = (today.getDay() + 6) % 7;
   const start = new Date(today);
   start.setDate(today.getDate() - todayIdx);
 

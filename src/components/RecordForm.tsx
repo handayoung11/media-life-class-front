@@ -8,24 +8,22 @@ import {
   Sparkles,
   Camera,
   X,
-  Image as ImageIcon,
+  AlertCircle,
 } from 'lucide-react';
-import { DayRecord } from '@/lib/types';
+import { api } from '@/lib/api';
+import { RecordPayload, RecordResponse } from '@/lib/types';
 
-interface RecordFormProps {
-  onSubmit: (record: DayRecord) => void;
-  existing?: DayRecord | null;
-}
-
-export function RecordForm({ onSubmit, existing }: RecordFormProps) {
+export function RecordForm() {
   const [mediaPhoto, setMediaPhoto] = useState<string | null>(null);
   const [mediaMin, setMediaMin] = useState('');
   const [exText, setExText] = useState('');
   const [exMin, setExMin] = useState('');
   const [studyText, setStudyText] = useState('');
   const [studyMin, setStudyMin] = useState('');
-  const [comment, setComment] = useState(existing?.comment ?? '');
+  const [comment, setComment] = useState('');
   const [toast, setToast] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,25 +35,46 @@ export function RecordForm({ onSubmit, existing }: RecordFormProps) {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const today = new Date().toISOString().slice(0, 10);
-    onSubmit({
-      date: today,
+    setError(null);
+
+    const payload: RecordPayload = {
       mediaMin: clamp(mediaMin),
       exerciseMin: clamp(exMin),
       studyMin: clamp(studyMin),
-      comment: comment.trim(),
-    });
-    setToast(true);
-    setMediaPhoto(null);
-    setMediaMin('');
-    setExText('');
-    setExMin('');
-    setStudyText('');
-    setStudyMin('');
-    setComment('');
-    setTimeout(() => setToast(false), 2200);
+      exerciseType: exText.trim() || undefined,
+      studyType: studyText.trim() || undefined,
+      comment: comment.trim() || undefined,
+    };
+
+    if (payload.mediaMin === 0 && payload.exerciseMin === 0 && payload.studyMin === 0) {
+      setError('최소 한 항목의 시간을 입력해 주세요.');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      await api.post<RecordResponse>('/api/records', payload);
+      setToast(true);
+      setMediaPhoto(null);
+      setMediaMin('');
+      setExText('');
+      setExMin('');
+      setStudyText('');
+      setStudyMin('');
+      setComment('');
+      setTimeout(() => {
+        setToast(false);
+        window.location.assign('/dashboard');
+      }, 1500);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : '기록 저장에 실패했습니다. 다시 시도해 주세요.';
+      setError(message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -64,6 +83,13 @@ export function RecordForm({ onSubmit, existing }: RecordFormProps) {
         <h2 className="font-display text-xl font-semibold text-sage-800">오늘의 기록</h2>
         <p className="text-xs text-sage-400 mt-0.5">하루를 돌아보고 미라밸을 채워보세요</p>
       </header>
+
+      {error && (
+        <div className="mb-4 flex items-start gap-2.5 rounded-2xl bg-error-500/10 border border-error-500/20 px-4 py-3 animate-slide-up">
+          <AlertCircle className="w-5 h-5 text-error-600 shrink-0 mt-0.5" />
+          <p className="text-sm text-error-700 font-medium">{error}</p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <Section icon={<Smartphone className="w-4 h-4" />} title="미디어 사용" tint="#c97b5a">
@@ -156,10 +182,20 @@ export function RecordForm({ onSubmit, existing }: RecordFormProps) {
 
         <button
           type="submit"
+          disabled={submitting}
           className="btn-base w-full h-14 bg-gradient-to-br from-sage-500 to-sage-600 text-white text-[15px] shadow-float hover:brightness-[1.04] mt-2"
         >
-          <Sparkles className="w-5 h-5" />
-          오늘의 미라밸 등록하기
+          {submitting ? (
+            <span className="flex items-center gap-2">
+              <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+              저장 중...
+            </span>
+          ) : (
+            <>
+              <Sparkles className="w-5 h-5" />
+              오늘의 미라밸 등록하기
+            </>
+          )}
         </button>
       </form>
 
@@ -167,7 +203,7 @@ export function RecordForm({ onSubmit, existing }: RecordFormProps) {
         <div className="fixed inset-x-0 bottom-24 mx-auto max-w-[18rem] z-50 animate-slide-up">
           <div className="flex items-center gap-2.5 rounded-2xl bg-sage-800 text-white px-4 py-3 shadow-float">
             <Check className="w-5 h-5 text-sage-200" />
-            <span className="text-sm font-medium">미라밸이 기록되었어요! 🌿</span>
+            <span className="text-sm font-medium">미라밸이 기록되었어요! 대시보드로 이동해요 🌿</span>
           </div>
         </div>
       )}

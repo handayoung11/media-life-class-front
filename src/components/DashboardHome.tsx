@@ -1,13 +1,67 @@
-import { Smartphone, Dumbbell, BookOpen, TrendingDown, Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Smartphone, Dumbbell, BookOpen, TrendingDown, Sparkles, AlertCircle } from 'lucide-react';
 import { DonutChart } from './DonutChart';
-import { DayRecord, CATEGORY_META, mockUser } from '@/lib/types';
+import { api } from '@/lib/api';
+import { CATEGORY_META, DashboardResponse, DashboardRecentRecord, User } from '@/lib/types';
 
-interface DashboardHomeProps {
-  today: DayRecord | null;
-  goalMediaMin: number;
-}
+export function DashboardHome() {
+  const [data, setData] = useState<DashboardResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-export function DashboardHome({ today, goalMediaMin }: DashboardHomeProps) {
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await api.get<DashboardResponse>('/dashboard');
+        if (!cancelled) {
+          setData(res.data);
+          setError(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : '대시보드 데이터를 불러오지 못했습니다.');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="px-5 pt-6 pb-28 space-y-5 animate-fade-in">
+        <DashboardSkeleton />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="px-5 pt-6 pb-28 animate-fade-in">
+        <div className="card p-6 flex flex-col items-center gap-3 text-center">
+          <AlertCircle className="w-8 h-8 text-accent-clay" />
+          <p className="text-sm text-sage-600 font-medium">{error ?? '데이터가 없습니다.'}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="btn-base h-10 px-5 bg-sage-600 text-white text-sm"
+          >
+            다시 시도
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const user: User = data.user;
+  const today: DashboardRecentRecord | null = data.today;
+  const summary = data.summary;
+  const goalMediaMin = summary.goalMediaMin || user.goalMediaMin || 120;
+
   const media = today?.mediaMin ?? 0;
   const exercise = today?.exerciseMin ?? 0;
   const study = today?.studyMin ?? 0;
@@ -30,16 +84,22 @@ export function DashboardHome({ today, goalMediaMin }: DashboardHomeProps) {
         <div>
           <p className="text-xs text-sage-400 font-medium">{greeting}</p>
           <h2 className="font-display text-xl font-semibold text-sage-800 mt-0.5">
-            {mockUser.nickname}님
+            {user.nickname}님
           </h2>
         </div>
         <div
           className="w-11 h-11 rounded-2xl flex items-center justify-center text-white font-semibold shadow-soft"
-          style={{ backgroundColor: mockUser.avatarColor }}
+          style={{ backgroundColor: user.avatarColor }}
         >
-          {mockUser.avatarInitial}
+          {user.avatarInitial}
         </div>
       </header>
+
+      {/* streak / total records summary */}
+      <section className="grid grid-cols-2 gap-3 animate-slide-up">
+        <MiniStat label="연속 기록" value={`${summary.streakDays}일`} tint="#5d8a52" />
+        <MiniStat label="총 기록 수" value={`${summary.totalRecords}회`} tint="#7ba6c7" />
+      </section>
 
       <section className="card p-5 animate-scale-in">
         <div className="flex items-center justify-between">
@@ -100,7 +160,10 @@ export function DashboardHome({ today, goalMediaMin }: DashboardHomeProps) {
         </div>
       </section>
 
-      <section className="grid grid-cols-3 gap-3 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+      <section
+        className="grid grid-cols-3 gap-3 animate-slide-up"
+        style={{ animationDelay: '0.2s' }}
+      >
         <SummaryCard
           icon={<Smartphone className="w-4 h-4" />}
           label="미디어"
@@ -112,14 +175,14 @@ export function DashboardHome({ today, goalMediaMin }: DashboardHomeProps) {
           icon={<Dumbbell className="w-4 h-4" />}
           label="운동"
           value={fmt(exercise)}
-          sub="누적"
+          sub="오늘"
           tint={CATEGORY_META.exercise}
         />
         <SummaryCard
           icon={<BookOpen className="w-4 h-4" />}
           label="공부"
           value={fmt(study)}
-          sub="누적"
+          sub="오늘"
           tint={CATEGORY_META.study}
         />
       </section>
@@ -128,6 +191,24 @@ export function DashboardHome({ today, goalMediaMin }: DashboardHomeProps) {
         <section className="card p-4 animate-fade-in" style={{ animationDelay: '0.3s' }}>
           <p className="text-xs text-sage-400 mb-1">오늘의 한줄 코멘트</p>
           <p className="text-[15px] text-sage-700 leading-relaxed">"{today.comment}"</p>
+        </section>
+      )}
+
+      {data.recentRecords.length > 0 && (
+        <section className="card p-4 animate-fade-in" style={{ animationDelay: '0.35s' }}>
+          <h3 className="font-display text-sm font-semibold text-sage-800 mb-3">최근 기록</h3>
+          <div className="space-y-2.5">
+            {data.recentRecords.slice(0, 5).map((r) => (
+              <div key={r.date} className="flex items-center justify-between text-xs">
+                <span className="text-sage-500 font-medium">{r.date}</span>
+                <span className="flex gap-2 text-sage-600">
+                  <span style={{ color: CATEGORY_META.media.color }}>미디어 {r.mediaMin}m</span>
+                  <span style={{ color: CATEGORY_META.exercise.color }}>운동 {r.exerciseMin}m</span>
+                  <span style={{ color: CATEGORY_META.study.color }}>공부 {r.studyMin}m</span>
+                </span>
+              </div>
+            ))}
+          </div>
         </section>
       )}
     </div>
@@ -147,6 +228,23 @@ function Legend({ color, label }: { color: string; label: string }) {
       <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
       {label}
     </span>
+  );
+}
+
+function MiniStat({ label, value, tint }: { label: string; value: string; tint: string }) {
+  return (
+    <div className="card p-3.5 flex items-center gap-3">
+      <span
+        className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-display text-sm font-semibold"
+        style={{ backgroundColor: tint }}
+      >
+        {value.charAt(0)}
+      </span>
+      <div>
+        <p className="text-[11px] text-sage-400 font-medium">{label}</p>
+        <p className="font-display text-base font-semibold text-sage-800">{value}</p>
+      </div>
+    </div>
   );
 }
 
@@ -175,5 +273,28 @@ function SummaryCard({
       <span className="font-display text-lg font-semibold text-sage-800 leading-none">{value}</span>
       <span className="text-[10px] text-sage-400">{sub}</span>
     </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <>
+      <div className="flex items-center justify-between animate-pulse">
+        <div className="space-y-2">
+          <div className="h-3 w-20 bg-sage-100 rounded" />
+          <div className="h-5 w-28 bg-sage-100 rounded" />
+        </div>
+        <div className="w-11 h-11 rounded-2xl bg-sage-100" />
+      </div>
+      <div className="card p-5 animate-pulse">
+        <div className="h-4 w-32 bg-sage-100 rounded mb-4" />
+        <div className="w-44 h-44 mx-auto rounded-full bg-sage-50" />
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="card p-3.5 h-24 animate-pulse bg-sage-50" />
+        ))}
+      </div>
+    </>
   );
 }
