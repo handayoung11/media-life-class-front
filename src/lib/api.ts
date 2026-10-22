@@ -20,8 +20,15 @@ api.interceptors.response.use(
   (res) => res,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      const path = window.location.pathname;
+      const resp = error.response;
+      const authHeader = resp.headers['www-authenticate'];
+      
+      // 만료된 경우 Refresh token 발급 후 재요청
+      if (authHeader && authHeader.includes('expired')) {
+        const newAccessToken = api.post('/token/refresh');
+        // config.headers['Authorization'] = `Bearer ${newAccessToken}`;
+        // return axios(config);
+      }
       if (path !== '/login' && !path.startsWith('/dashboard')) {
         window.location.replace('/login');
       }
