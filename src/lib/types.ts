@@ -71,6 +71,7 @@ export interface DashboardResponse {
 }
 
 export interface RecordPayload {
+  date: string;
   mediaMin: number;
   exerciseMin: number;
   studyMin: number;

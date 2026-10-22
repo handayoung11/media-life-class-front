@@ -11,11 +11,14 @@ import { isLoggedIn, logout } from '@/lib/api';
 const GUEST_ALLOWED: TabKey = 'club';
 
 export function DashboardLayout() {
-  const [searchParams] = useSearchParams();
-  const initialTab = (searchParams.get('tab') as TabKey) || 'home';
+  const [searchParams, setSearchParams] = useSearchParams();
   const loggedIn = isLoggedIn();
 
-  const [tab, setTab] = useState<TabKey>(loggedIn ? initialTab : GUEST_ALLOWED);
+  const [tab, setTab] = useState<TabKey>(() => {
+    const param = searchParams.get('tab') as TabKey | null;
+    if (!loggedIn && param !== GUEST_ALLOWED) return GUEST_ALLOWED;
+    return param ?? 'home';
+  });
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [pendingTab, setPendingTab] = useState<TabKey | null>(null);
   const navigate = useNavigate();
@@ -28,6 +31,15 @@ export function DashboardLayout() {
     }
   }, [isGuest, tab]);
 
+  useEffect(() => {
+    const param = searchParams.get('tab') as TabKey | null;
+    if (param && param !== tab) {
+      if (!isGuest || param === GUEST_ALLOWED) {
+        setTab(param);
+      }
+    }
+  }, [searchParams, isGuest, tab]);
+
   const handleTabChange = (next: TabKey) => {
     if (isGuest && next !== GUEST_ALLOWED) {
       setPendingTab(next);
@@ -35,6 +47,7 @@ export function DashboardLayout() {
       return;
     }
     setTab(next);
+    setSearchParams({ tab: next }, { replace: true });
   };
 
   const handleConfirmLogin = () => {

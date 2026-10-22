@@ -1,10 +1,21 @@
 import { useEffect, useState } from 'react';
-import { Smartphone, Dumbbell, BookOpen, TrendingDown, Sparkles, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Smartphone,
+  Dumbbell,
+  BookOpen,
+  TrendingDown,
+  Sparkles,
+  AlertCircle,
+  PenLine,
+  Leaf,
+} from 'lucide-react';
 import { DonutChart } from './DonutChart';
 import { api } from '@/lib/api';
 import { CATEGORY_META, DashboardResponse, DashboardRecentRecord, User } from '@/lib/types';
 
 export function DashboardHome() {
+  const navigate = useNavigate();
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +72,7 @@ export function DashboardHome() {
   const today: DashboardRecentRecord | null = data.today;
   const summary = data.summary;
   const goalMediaMin = summary.goalMediaMin || user.goalMediaMin || 120;
+  const hasToday = !!today;
 
   const media = today?.mediaMin ?? 0;
   const exercise = today?.exerciseMin ?? 0;
@@ -101,28 +113,32 @@ export function DashboardHome() {
         <MiniStat label="총 기록 수" value={`${summary.totalRecords}회`} tint="#7ba6c7" />
       </section>
 
-      <section className="card p-5 animate-scale-in">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-display text-lg font-semibold text-sage-800">오늘의 미라밸</h3>
-            <p className="text-xs text-sage-400 mt-0.5">내가 기록한 시간 비율</p>
+      {hasToday ? (
+        <section className="card p-5 animate-scale-in">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-display text-lg font-semibold text-sage-800">오늘의 미라밸</h3>
+              <p className="text-xs text-sage-400 mt-0.5">내가 기록한 시간 비율</p>
+            </div>
+            <div className="flex items-center gap-3 text-[11px]">
+              <Legend color={CATEGORY_META.media.color} label="미디어" />
+              <Legend color={CATEGORY_META.exercise.color} label="운동" />
+              <Legend color={CATEGORY_META.study.color} label="공부" />
+            </div>
           </div>
-          <div className="flex items-center gap-3 text-[11px]">
-            <Legend color={CATEGORY_META.media.color} label="미디어" />
-            <Legend color={CATEGORY_META.exercise.color} label="운동" />
-            <Legend color={CATEGORY_META.study.color} label="공부" />
-          </div>
-        </div>
 
-        <div className="flex items-center justify-center mt-4">
-          <DonutChart
-            slices={slices}
-            size={184}
-            centerLabel={`${Math.round(total / 60)}h ${total % 60}m`}
-            centerSub="총 기록 시간"
-          />
-        </div>
-      </section>
+          <div className="flex items-center justify-center mt-4">
+            <DonutChart
+              slices={slices}
+              size={184}
+              centerLabel={`${Math.round(total / 60)}h ${total % 60}m`}
+              centerSub="총 기록 시간"
+            />
+          </div>
+        </section>
+      ) : (
+        <EmptyTodayCard onRecord={() => navigate('/dashboard?tab=record')} />
+      )}
 
       <section
         className={`rounded-3xl p-5 shadow-card border animate-slide-up ${
@@ -167,22 +183,22 @@ export function DashboardHome() {
         <SummaryCard
           icon={<Smartphone className="w-4 h-4" />}
           label="미디어"
-          value={fmt(media)}
+          value={hasToday ? fmt(media) : '--'}
           sub={`/ ${Math.round(goalMediaMin / 60)}시간 목표`}
           tint={CATEGORY_META.media}
         />
         <SummaryCard
           icon={<Dumbbell className="w-4 h-4" />}
           label="운동"
-          value={fmt(exercise)}
-          sub="오늘"
+          value={hasToday ? fmt(exercise) : '--'}
+          sub={hasToday ? '오늘' : '기록 없음'}
           tint={CATEGORY_META.exercise}
         />
         <SummaryCard
           icon={<BookOpen className="w-4 h-4" />}
           label="공부"
-          value={fmt(study)}
-          sub="오늘"
+          value={hasToday ? fmt(study) : '--'}
+          sub={hasToday ? '오늘' : '기록 없음'}
           tint={CATEGORY_META.study}
         />
       </section>
@@ -296,5 +312,30 @@ function DashboardSkeleton() {
         ))}
       </div>
     </>
+  );
+}
+
+function EmptyTodayCard({ onRecord }: { onRecord: () => void }) {
+  return (
+    <section
+      className="rounded-3xl p-6 shadow-card border bg-gradient-to-br from-sage-50 to-cream-100 border-sage-200 animate-scale-in flex flex-col items-center text-center"
+    >
+      <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-sage-300 to-sage-500 shadow-soft flex items-center justify-center mb-4">
+        <Leaf className="w-8 h-8 text-white" strokeWidth={1.6} />
+      </div>
+      <h3 className="font-display text-lg font-semibold text-sage-800">
+        오늘의 기록이 아직 없어요
+      </h3>
+      <p className="mt-2 text-sm text-sage-500 leading-relaxed max-w-[16rem]">
+        지금 기록하면 오늘의 미라밸 차트가 채워져요. 첫 기록으로 갓생을 시작해 보세요!
+      </p>
+      <button
+        onClick={onRecord}
+        className="btn-base mt-5 h-12 px-6 bg-gradient-to-br from-sage-500 to-sage-600 text-white text-sm shadow-soft hover:brightness-[1.04]"
+      >
+        <PenLine className="w-4 h-4" />
+        기록하러 가기
+      </button>
+    </section>
   );
 }

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import {
+  Calendar,
   Smartphone,
   Dumbbell,
   BookOpen,
@@ -11,7 +12,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { api } from '@/lib/api';
-import { RecordPayload, RecordResponse } from '@/lib/types';
+import { RecordPayload, RecordResponse, todayKey } from '@/lib/types';
 
 export function RecordForm() {
   const [mediaPhoto, setMediaPhoto] = useState<string | null>(null);
@@ -21,6 +22,7 @@ export function RecordForm() {
   const [studyText, setStudyText] = useState('');
   const [studyMin, setStudyMin] = useState('');
   const [comment, setComment] = useState('');
+  const [date, setDate] = useState(todayKey());
   const [toast, setToast] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -40,6 +42,7 @@ export function RecordForm() {
     setError(null);
 
     const payload: RecordPayload = {
+      date,
       mediaMin: clamp(mediaMin),
       exerciseMin: clamp(exMin),
       studyMin: clamp(studyMin),
@@ -64,6 +67,7 @@ export function RecordForm() {
       setStudyText('');
       setStudyMin('');
       setComment('');
+      setDate(todayKey());
       setTimeout(() => {
         setToast(false);
         window.location.assign('/dashboard');
@@ -80,7 +84,7 @@ export function RecordForm() {
   return (
     <div className="px-5 pt-6 pb-28 animate-fade-in">
       <header className="mb-5">
-        <h2 className="font-display text-xl font-semibold text-sage-800">오늘의 기록</h2>
+        <h2 className="font-display text-xl font-semibold text-sage-800">기록하기</h2>
         <p className="text-xs text-sage-400 mt-0.5">하루를 돌아보고 미라밸을 채워보세요</p>
       </header>
 
@@ -92,6 +96,28 @@ export function RecordForm() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        <Section icon={<Calendar className="w-4 h-4" />} title="기록 날짜" tint="#a89bb0">
+          <div className="space-y-1.5">
+            <label className="text-[11px] text-sage-400 font-medium">어떤 날의 기록인가요?</label>
+            <input
+              type="date"
+              value={date}
+              max={todayKey()}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full rounded-2xl bg-sage-50 border border-sage-100 px-4 py-3 text-sm text-sage-800 focus:outline-none focus:ring-2 focus:ring-sage-300 transition"
+            />
+            {date !== todayKey() && (
+              <button
+                type="button"
+                onClick={() => setDate(todayKey())}
+                className="text-[11px] text-sage-500 font-medium hover:text-sage-700 transition"
+              >
+                오늘 날짜로 돌아가기
+              </button>
+            )}
+          </div>
+        </Section>
+
         <Section icon={<Smartphone className="w-4 h-4" />} title="미디어 사용" tint="#c97b5a">
           <p className="text-xs text-sage-400">오늘의 스크린타임 사진을 올려 기록해요</p>
 
@@ -193,7 +219,7 @@ export function RecordForm() {
           ) : (
             <>
               <Sparkles className="w-5 h-5" />
-              오늘의 미라밸 등록하기
+              {date === todayKey() ? '오늘의 미라밸 등록하기' : `${formatDate(date)} 미라밸 등록하기`}
             </>
           )}
         </button>
@@ -214,6 +240,11 @@ export function RecordForm() {
 function clamp(s: string): number {
   const n = parseInt(s, 10);
   return Number.isFinite(n) && n > 0 ? Math.min(n, 1440) : 0;
+}
+
+function formatDate(iso: string): string {
+  const d = new Date(iso + 'T00:00:00');
+  return `${d.getMonth() + 1}월 ${d.getDate()}일`;
 }
 
 function Section({
