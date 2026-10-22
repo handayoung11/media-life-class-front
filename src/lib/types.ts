@@ -77,6 +77,7 @@ export interface RecordPayload {
   studyMin: number;
   exerciseType?: string;
   studyType?: string;
+  mediaNote?: string;
   comment?: string;
 }
 

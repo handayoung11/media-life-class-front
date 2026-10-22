@@ -17,6 +17,7 @@ import { RecordPayload, RecordResponse, todayKey } from '@/lib/types';
 export function RecordForm() {
   const [mediaPhoto, setMediaPhoto] = useState<string | null>(null);
   const [mediaMin, setMediaMin] = useState('');
+  const [mediaNote, setMediaNote] = useState('');
   const [exText, setExText] = useState('');
   const [exMin, setExMin] = useState('');
   const [studyText, setStudyText] = useState('');
@@ -48,6 +49,7 @@ export function RecordForm() {
       studyMin: clamp(studyMin),
       exerciseType: exText.trim() || undefined,
       studyType: studyText.trim() || undefined,
+      mediaNote: mediaNote.trim() || undefined,
       comment: comment.trim() || undefined,
     };
 
@@ -62,6 +64,7 @@ export function RecordForm() {
       setToast(true);
       setMediaPhoto(null);
       setMediaMin('');
+      setMediaNote('');
       setExText('');
       setExMin('');
       setStudyText('');
@@ -160,15 +163,25 @@ export function RecordForm() {
             onChange={setMediaMin}
             placeholder="예) 90"
           />
+
+          <TextArea
+            label="미디어 메모"
+            value={mediaNote}
+            onChange={setMediaNote}
+            rows={3}
+            maxLength={200}
+            placeholder="게임, 태블릿, 유튜브 등 추가로 기록할 미디어 활동을 자유롭게 적어보세요"
+          />
         </Section>
 
         <Section icon={<Dumbbell className="w-4 h-4" />} title="운동 기록" tint="#5d8a52">
-          <TextInput
-            label="운동 종류"
+          <TextArea
+            label="운동 내용"
             value={exText}
             onChange={setExText}
-            placeholder="예) 헬스, 산책, 달리기..."
-            maxLength={30}
+            rows={3}
+            maxLength={200}
+            placeholder={'여러 활동을 한 줄씩 적어보세요\n예) 헬스 30분, 산책 20분, 스트레칭'}
           />
           <TimeInput
             label="운동 시간"
@@ -179,12 +192,13 @@ export function RecordForm() {
         </Section>
 
         <Section icon={<BookOpen className="w-4 h-4" />} title="공부 기록" tint="#7ba6c7">
-          <TextInput
+          <TextArea
             label="공부 내용"
             value={studyText}
             onChange={setStudyText}
-            placeholder="예) 전공 과목, 자격증, 독서..."
-            maxLength={30}
+            rows={3}
+            maxLength={200}
+            placeholder={'여러 활동을 한 줄씩 적어보세요\n예) 전공 과목, 자격증, 독서 30분'}
           />
           <TimeInput
             label="집중 시간"
@@ -274,29 +288,38 @@ function Section({
   );
 }
 
-function TextInput({
+function TextArea({
   label,
   value,
   onChange,
+  rows,
   placeholder,
   maxLength,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
+  rows: number;
   placeholder: string;
   maxLength?: number;
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-[11px] text-sage-400 font-medium">{label}</label>
-      <input
-        type="text"
+      <div className="flex items-center justify-between">
+        <label className="text-[11px] text-sage-400 font-medium">{label}</label>
+        {maxLength && (
+          <span className="text-[11px] text-sage-300">
+            {value.length}/{maxLength}
+          </span>
+        )}
+      </div>
+      <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
+        rows={rows}
         maxLength={maxLength}
-        className="w-full rounded-2xl bg-sage-50 border border-sage-100 px-4 py-3 text-sm text-sage-800 placeholder:text-sage-300 focus:outline-none focus:ring-2 focus:ring-sage-300 transition"
+        placeholder={placeholder}
+        className="w-full rounded-2xl bg-sage-50 border border-sage-100 px-4 py-3 text-sm text-sage-800 placeholder:text-sage-300 focus:outline-none focus:ring-2 focus:ring-sage-300 resize-none transition"
       />
     </div>
   );
