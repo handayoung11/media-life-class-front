@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Leaf, Sparkles, ChevronRight } from 'lucide-react';
-import { loginWithGoogle, isLoggedIn, API_BASE_URL } from '@/lib/api';
+import { isLoggedIn, API_BASE_URL } from '@/lib/api';
 
 export function LoginPage() {
   const [pending, setPending] = useState<'kakao' | 'google' | null>(null);
@@ -13,7 +13,7 @@ export function LoginPage() {
 
   const handleGoogle = () => {
     setPending('google');
-    loginWithGoogle();
+    window.location.replace(`${API_BASE_URL}/oauth2/authorization/google`);
   };
 
   const handleKakao = () => {

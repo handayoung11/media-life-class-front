@@ -39,8 +39,4 @@ export function logout(): void {
   window.location.replace('/login');
 }
 
-export function loginWithGoogle(): void {
-  window.location.replace(`${BASE_URL}/oauth2/authorization/google`);
-}
-
 export const API_BASE_URL = BASE_URL;
