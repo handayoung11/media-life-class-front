@@ -1,22 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Target, Pencil, Check, LogOut, Settings, ChevronRight, AlertCircle } from 'lucide-react';
-import { WeeklyBarChart } from './WeeklyBarChart';
 import { api } from '@/lib/api';
-import {
-  DayRecord,
-  User,
-  CATEGORY_META,
-  DashboardResponse,
-} from '@/lib/types';
+import { User, MyPageResponse } from '@/lib/types';
 
 interface MyPageProps {
   onLogout: () => void;
 }
 
-const DAYS = ['월', '화', '수', '목', '금', '토', '일'];
-
 export function MyPage({ onLogout }: MyPageProps) {
-  const [data, setData] = useState<DashboardResponse | null>(null);
+  const [data, setData] = useState<MyPageResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
@@ -27,7 +19,7 @@ export function MyPage({ onLogout }: MyPageProps) {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await api.get<DashboardResponse>('/miracle');
+      const res = await api.get<MyPageResponse>('/miracle/mypage');
       setData(res.data);
       const goal = res.data.summary.goalMediaMin || res.data.user.goalMediaMin || 120;
       setGoalH(String(Math.floor(goal / 60)));
@@ -95,24 +87,7 @@ export function MyPage({ onLogout }: MyPageProps) {
   }
 
   const user: User = data.user;
-  const records: DayRecord[] = data.recentRecords.map((r) => ({
-    date: r.date,
-    mediaMin: r.mediaMin,
-    exerciseMin: r.exerciseMin,
-    studyMin: r.studyMin,
-    comment: r.comment,
-  }));
   const goalMediaMin = data.summary.goalMediaMin || user.goalMediaMin || 120;
-
-  const weekly = buildWeekly(records, data.weekly);
-  const totals = weekly.reduce(
-    (a, w) => ({
-      media: a.media + w.media,
-      exercise: a.exercise + w.study,
-      study: a.study + w.study,
-    }),
-    { media: 0, exercise: 0, study: 0 }
-  );
 
   return (
     <div className="px-5 pt-6 pb-28 animate-fade-in space-y-5">
@@ -122,12 +97,17 @@ export function MyPage({ onLogout }: MyPageProps) {
       </header>
 
       <section className="card p-5 flex items-center gap-4 animate-scale-in">
-        <div
-          className="w-16 h-16 rounded-3xl flex items-center justify-center text-white text-xl font-semibold shadow-soft"
-          style={{ backgroundColor: user.avatarColor }}
-        >
-          {user.avatarInitial}
-        </div>
+        {user.profileImageUrl ? (
+          <img
+            src={user.profileImageUrl}
+            alt={user.nickname}
+            className="w-16 h-16 rounded-3xl object-cover shadow-soft"
+          />
+        ) : (
+          <div className="w-16 h-16 rounded-3xl bg-sage-200 flex items-center justify-center text-sage-500 text-xl font-semibold shadow-soft">
+            {user.nickname.charAt(0)}
+          </div>
+        )}
         <div className="flex-1 min-w-0">
           <p className="font-display text-lg font-semibold text-sage-800 truncate">
             {user.nickname}
@@ -137,21 +117,6 @@ export function MyPage({ onLogout }: MyPageProps) {
             <span className="w-1.5 h-1.5 rounded-full bg-sage-500" />
             미라클 클럽 멤버
           </span>
-        </div>
-      </section>
-
-      <section className="card p-5 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="font-display text-base font-semibold text-sage-800">이번 주 누적 통계</h3>
-            <p className="text-xs text-sage-400 mt-0.5">최근 7일 기록</p>
-          </div>
-        </div>
-        <WeeklyBarChart bars={weekly} unit="hr" />
-        <div className="grid grid-cols-3 gap-2 mt-5 pt-4 border-t border-sage-50">
-          <WeeklyTotal label="미디어" value={totals.media} color={CATEGORY_META.media.color} />
-          <WeeklyTotal label="운동" value={totals.exercise} color={CATEGORY_META.exercise.color} />
-          <WeeklyTotal label="공부" value={totals.study} color={CATEGORY_META.study.color} />
         </div>
       </section>
 
@@ -249,54 +214,4 @@ function NumberBox({
       <span className="text-sm text-sage-500 font-medium">{label}</span>
     </div>
   );
-}
-
-function WeeklyTotal({ label, value, color }: { label: string; value: number; color: string }) {
-  return (
-    <div className="text-center">
-      <span
-        className="inline-block w-1.5 h-1.5 rounded-full mb-1"
-        style={{ backgroundColor: color }}
-      />
-      <p className="text-[11px] text-sage-400">{label}</p>
-      <p className="font-display text-base font-semibold text-sage-800">
-        {Math.floor(value / 60)}h {value % 60}m
-      </p>
-    </div>
-  );
-}
-
-function buildWeekly(
-  records: DayRecord[],
-  weekly: { date: string; media: number; exercise: number; study: number }[] | undefined
-) {
-  if (weekly && weekly.length > 0) {
-    return weekly.map((w, i) => ({
-      label: DAYS[i % 7],
-      media: w.media,
-      exercise: w.exercise,
-      study: w.study,
-      isToday: i === (new Date().getDay() + 6) % 7,
-    }));
-  }
-
-  const today = new Date();
-  const todayIdx = (today.getDay() + 6) % 7;
-  const start = new Date(today);
-  start.setDate(today.getDate() - todayIdx);
-
-  const byDate = new Map(records.map((r) => [r.date, r]));
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
-    const key = d.toISOString().slice(0, 10);
-    const r = byDate.get(key);
-    return {
-      label: DAYS[i],
-      media: r?.mediaMin ?? 0,
-      exercise: r?.exerciseMin ?? 0,
-      study: r?.studyMin ?? 0,
-      isToday: i === todayIdx,
-    };
-  });
 }

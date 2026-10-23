@@ -32,8 +32,7 @@ export interface FeedPost {
 export interface User {
   nickname: string;
   email: string;
-  avatarColor: string;
-  avatarInitial: string;
+  profileImageUrl: string | null;
   goalMediaMin: number;
 }
 
@@ -68,6 +67,11 @@ export interface DashboardResponse {
   today: DashboardRecentRecord | null;
   recentRecords: DashboardRecentRecord[];
   weekly: { date: string; media: number; exercise: number; study: number }[];
+}
+
+export interface MyPageResponse {
+  user: User;
+  summary: DashboardSummary;
 }
 
 export interface RecordPayload {

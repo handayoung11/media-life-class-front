@@ -11,8 +11,9 @@ import {
   Leaf,
 } from 'lucide-react';
 import { DonutChart } from './DonutChart';
+import { WeeklyBarChart } from './WeeklyBarChart';
 import { api } from '@/lib/api';
-import { CATEGORY_META, DashboardResponse, DashboardRecentRecord, User } from '@/lib/types';
+import { CATEGORY_META, DashboardResponse, DashboardRecentRecord, User, DayRecord } from '@/lib/types';
 
 export function DashboardHome() {
   const navigate = useNavigate();
@@ -90,6 +91,16 @@ export function DashboardHome() {
 
   const greeting = '오늘도 빛나는 갓생';
 
+  const weekly = buildWeekly(data.recentRecords, data.weekly);
+  const weeklyTotals = weekly.reduce(
+    (a, w) => ({
+      media: a.media + w.media,
+      exercise: a.exercise + w.exercise,
+      study: a.study + w.study,
+    }),
+    { media: 0, exercise: 0, study: 0 }
+  );
+
   return (
     <div className="px-5 pt-6 pb-28 space-y-5 animate-fade-in">
       <header className="flex items-center justify-between">
@@ -99,12 +110,17 @@ export function DashboardHome() {
             {user.nickname}님
           </h2>
         </div>
-        <div
-          className="w-11 h-11 rounded-2xl flex items-center justify-center text-white font-semibold shadow-soft"
-          style={{ backgroundColor: user.avatarColor }}
-        >
-          {user.avatarInitial}
-        </div>
+        {user.profileImageUrl ? (
+          <img
+            src={user.profileImageUrl}
+            alt={user.nickname}
+            className="w-11 h-11 rounded-2xl object-cover shadow-soft"
+          />
+        ) : (
+          <div className="w-11 h-11 rounded-2xl bg-sage-200 flex items-center justify-center text-sage-500 font-semibold shadow-soft">
+            {user.nickname.charAt(0)}
+          </div>
+        )}
       </header>
 
       {/* streak / total records summary */}
@@ -227,6 +243,21 @@ export function DashboardHome() {
           </div>
         </section>
       )}
+
+      <section className="card p-5 animate-slide-up" style={{ animationDelay: '0.4s' }}>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="font-display text-base font-semibold text-sage-800">이번 주 누적 통계</h3>
+            <p className="text-xs text-sage-400 mt-0.5">최근 7일 기록</p>
+          </div>
+        </div>
+        <WeeklyBarChart bars={weekly} unit="hr" />
+        <div className="grid grid-cols-3 gap-2 mt-5 pt-4 border-t border-sage-50">
+          <WeeklyTotal label="미디어" value={weeklyTotals.media} color={CATEGORY_META.media.color} />
+          <WeeklyTotal label="운동" value={weeklyTotals.exercise} color={CATEGORY_META.exercise.color} />
+          <WeeklyTotal label="공부" value={weeklyTotals.study} color={CATEGORY_META.study.color} />
+        </div>
+      </section>
     </div>
   );
 }
@@ -338,4 +369,56 @@ function EmptyTodayCard({ onRecord }: { onRecord: () => void }) {
       </button>
     </section>
   );
+}
+
+const WEEKDAYS = ['월', '화', '수', '목', '금', '토', '일'];
+
+function WeeklyTotal({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div className="text-center">
+      <span
+        className="inline-block w-1.5 h-1.5 rounded-full mb-1"
+        style={{ backgroundColor: color }}
+      />
+      <p className="text-[11px] text-sage-400">{label}</p>
+      <p className="font-display text-base font-semibold text-sage-800">
+        {Math.floor(value / 60)}h {value % 60}m
+      </p>
+    </div>
+  );
+}
+
+function buildWeekly(
+  records: DayRecord[],
+  weekly: { date: string; media: number; exercise: number; study: number }[] | undefined
+) {
+  if (weekly && weekly.length > 0) {
+    return weekly.map((w, i) => ({
+      label: WEEKDAYS[i % 7],
+      media: w.media,
+      exercise: w.exercise,
+      study: w.study,
+      isToday: i === (new Date().getDay() + 6) % 7,
+    }));
+  }
+
+  const today = new Date();
+  const todayIdx = (today.getDay() + 6) % 7;
+  const start = new Date(today);
+  start.setDate(today.getDate() - todayIdx);
+
+  const byDate = new Map(records.map((r) => [r.date, r]));
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    const key = d.toISOString().slice(0, 10);
+    const r = byDate.get(key);
+    return {
+      label: WEEKDAYS[i],
+      media: r?.mediaMin ?? 0,
+      exercise: r?.exerciseMin ?? 0,
+      study: r?.studyMin ?? 0,
+      isToday: i === todayIdx,
+    };
+  });
 }
