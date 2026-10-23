@@ -129,6 +129,40 @@ export function DashboardHome() {
         <MiniStat label="총 기록 수" value={`${summary.totalRecords}회`} tint="#7ba6c7" />
       </section>
 
+      <section
+        className={`rounded-3xl p-5 shadow-card border animate-slide-up ${overGoal
+            ? 'bg-gradient-to-br from-accent-clay/15 to-cream-100 border-accent-clay/30'
+            : 'bg-gradient-to-br from-sage-100 to-cream-100 border-sage-200'
+          }`}
+        style={{ animationDelay: '0.1s' }}
+      >
+        <div className="flex items-start gap-3">
+          <div
+            className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${overGoal ? 'bg-accent-clay/20 text-accent-clay' : 'bg-sage-500 text-white'
+              }`}
+          >
+            {overGoal ? <Sparkles className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+          </div>
+          <div>
+            {overGoal ? (
+              <p className="font-display text-[17px] leading-snug font-semibold text-sage-800">
+                오늘 목표보다 미디어를 {Math.round(media - goalMediaMin)}분 더 사용했어요.
+                <br />
+                <span className="text-sage-500 text-sm font-medium">
+                  내일은 30분 덜어내 보면 어떨까요?
+                </span>
+              </p>
+            ) : (
+              <p className="font-display text-[17px] leading-snug font-semibold text-sage-800">
+                목표 시간보다 미디어 사용을 {reductionPct}% 줄였습니다!
+                <br />
+                <span className="text-sage-500 text-sm font-medium">갓생 진행 중 🌿</span>
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
+
       {hasToday ? (
         <section className="card p-5 animate-scale-in">
           <div className="flex items-center justify-between">
@@ -155,42 +189,6 @@ export function DashboardHome() {
       ) : (
         <EmptyTodayCard onRecord={() => navigate('/dashboard?tab=record')} />
       )}
-
-      <section
-        className={`rounded-3xl p-5 shadow-card border animate-slide-up ${
-          overGoal
-            ? 'bg-gradient-to-br from-accent-clay/15 to-cream-100 border-accent-clay/30'
-            : 'bg-gradient-to-br from-sage-100 to-cream-100 border-sage-200'
-        }`}
-        style={{ animationDelay: '0.1s' }}
-      >
-        <div className="flex items-start gap-3">
-          <div
-            className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
-              overGoal ? 'bg-accent-clay/20 text-accent-clay' : 'bg-sage-500 text-white'
-            }`}
-          >
-            {overGoal ? <Sparkles className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
-          </div>
-          <div>
-            {overGoal ? (
-              <p className="font-display text-[17px] leading-snug font-semibold text-sage-800">
-                오늘 목표보다 미디어를 {Math.round(media - goalMediaMin)}분 더 사용했어요.
-                <br />
-                <span className="text-sage-500 text-sm font-medium">
-                  내일은 30분 덜어내 보면 어떨까요?
-                </span>
-              </p>
-            ) : (
-              <p className="font-display text-[17px] leading-snug font-semibold text-sage-800">
-                오늘 미디어 사용을 {reductionPct}% 줄였습니다!
-                <br />
-                <span className="text-sage-500 text-sm font-medium">갓생 진행 중 🌿</span>
-              </p>
-            )}
-          </div>
-        </div>
-      </section>
 
       <section
         className="grid grid-cols-3 gap-3 animate-slide-up"
@@ -226,6 +224,21 @@ export function DashboardHome() {
         </section>
       )}
 
+      <section className="card p-5 animate-slide-up" style={{ animationDelay: '0.4s' }}>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="font-display text-base font-semibold text-sage-800">이번 주 누적 통계</h3>
+            <p className="text-xs text-sage-400 mt-0.5">최근 7일 기록</p>
+          </div>
+        </div>
+        <WeeklyBarChart bars={weekly} unit="hr" />
+        <div className="grid grid-cols-3 gap-2 mt-5 pt-4 border-t border-sage-50">
+          <WeeklyTotal label="미디어" value={weeklyTotals.media} color={CATEGORY_META.media.color} />
+          <WeeklyTotal label="운동" value={weeklyTotals.exercise} color={CATEGORY_META.exercise.color} />
+          <WeeklyTotal label="공부" value={weeklyTotals.study} color={CATEGORY_META.study.color} />
+        </div>
+      </section>
+
       {data.recentRecords.length > 0 && (
         <section className="card p-4 animate-fade-in" style={{ animationDelay: '0.35s' }}>
           <h3 className="font-display text-sm font-semibold text-sage-800 mb-3">최근 기록</h3>
@@ -243,21 +256,6 @@ export function DashboardHome() {
           </div>
         </section>
       )}
-
-      <section className="card p-5 animate-slide-up" style={{ animationDelay: '0.4s' }}>
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="font-display text-base font-semibold text-sage-800">이번 주 누적 통계</h3>
-            <p className="text-xs text-sage-400 mt-0.5">최근 7일 기록</p>
-          </div>
-        </div>
-        <WeeklyBarChart bars={weekly} unit="hr" />
-        <div className="grid grid-cols-3 gap-2 mt-5 pt-4 border-t border-sage-50">
-          <WeeklyTotal label="미디어" value={weeklyTotals.media} color={CATEGORY_META.media.color} />
-          <WeeklyTotal label="운동" value={weeklyTotals.exercise} color={CATEGORY_META.exercise.color} />
-          <WeeklyTotal label="공부" value={weeklyTotals.study} color={CATEGORY_META.study.color} />
-        </div>
-      </section>
     </div>
   );
 }
@@ -285,7 +283,7 @@ function MiniStat({ label, value, tint }: { label: string; value: string; tint: 
         className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-display text-sm font-semibold"
         style={{ backgroundColor: tint }}
       >
-        {value.charAt(0)}
+        {value.slice(0, -1)}
       </span>
       <div>
         <p className="text-[11px] text-sage-400 font-medium">{label}</p>
