@@ -54,7 +54,7 @@ export function RecordForm() {
     setError(null);
 
     const payload: RecordPayload = {
-      melibalDate: date,
+      miracleDate: date,
       mediaMin: clamp(mediaMin),
       exerMin: clamp(exerMin),
       studyMin: clamp(studyMin),
@@ -71,7 +71,7 @@ export function RecordForm() {
     }
 
     const formData = new FormData();
-    formData.append('melibalDate', payload.melibalDate);
+    formData.append('miracleDate', payload.miracleDate);
     formData.append('mediaMin', String(payload.mediaMin));
     formData.append('exerMin', String(payload.exerMin));
     formData.append('studyMin', String(payload.studyMin));

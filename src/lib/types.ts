@@ -71,7 +71,7 @@ export interface DashboardResponse {
 }
 
 export interface RecordPayload {
-  melibalDate: string;
+  miracleDate: string;
   mediaMin: number;
   exerMin: number;
   studyMin: number;
