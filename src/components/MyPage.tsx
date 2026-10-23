@@ -27,7 +27,7 @@ export function MyPage({ onLogout }: MyPageProps) {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await api.get<DashboardResponse>('/dashboard');
+      const res = await api.get<DashboardResponse>('/miracle');
       setData(res.data);
       const goal = res.data.summary.goalMediaMin || res.data.user.goalMediaMin || 120;
       setGoalH(String(Math.floor(goal / 60)));
