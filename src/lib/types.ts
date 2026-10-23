@@ -79,6 +79,7 @@ export interface RecordPayload {
   study?: string;
   media?: string;
   memo?: string;
+  mediaPic?: File;
 }
 
 export interface RecordResponse {

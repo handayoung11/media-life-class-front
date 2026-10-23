@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Calendar,
   Smartphone,
@@ -17,6 +17,7 @@ import { AxiosError } from 'axios';
 
 export function RecordForm() {
   const [mediaPic, setMediaPic] = useState<string | null>(null);
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [mediaMin, setMediaMin] = useState('');
   const [media, setMedia] = useState('');
   const [exer, setExer] = useState('');
@@ -29,15 +30,24 @@ export function RecordForm() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+  const submitRef = useRef<HTMLButtonElement>(null);
 
   const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setMediaFile(file);
       const reader = new FileReader();
       reader.onload = () => setMediaPic(reader.result as string);
       reader.readAsDataURL(file);
     }
   };
+
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [error]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +62,7 @@ export function RecordForm() {
       study: study.trim() || undefined,
       media: media.trim() || undefined,
       memo: memo.trim() || undefined,
+      mediaPic: mediaFile ?? undefined,
     };
 
     if (payload.mediaMin === 0 && payload.exerMin === 0 && payload.studyMin === 0) {
@@ -59,11 +70,25 @@ export function RecordForm() {
       return;
     }
 
+    const formData = new FormData();
+    formData.append('melibalDate', payload.melibalDate);
+    formData.append('mediaMin', String(payload.mediaMin));
+    formData.append('exerMin', String(payload.exerMin));
+    formData.append('studyMin', String(payload.studyMin));
+    if (payload.exer) formData.append('exer', payload.exer);
+    if (payload.study) formData.append('study', payload.study);
+    if (payload.media) formData.append('media', payload.media);
+    if (payload.memo) formData.append('memo', payload.memo);
+    if (payload.mediaPic) formData.append('mediaPic', payload.mediaPic);
+
     try {
       setSubmitting(true);
-      await api.post<RecordResponse>('/miracle', payload);
+      await api.post<RecordResponse>('/miracle', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
       setToast(true);
       setMediaPic(null);
+      setMediaFile(null);
       setMediaMin('');
       setMedia('');
       setExer('');
@@ -91,13 +116,6 @@ export function RecordForm() {
         <h2 className="font-display text-xl font-semibold text-sage-800">미디어 라이프 밸런스</h2>
         <p className="text-xs text-sage-400 mt-0.5">하루를 돌아보고 미라밸을 채워보세요</p>
       </header>
-
-      {error && (
-        <div className="mb-4 flex items-start gap-2.5 rounded-2xl bg-error-500/10 border border-error-500/20 px-4 py-3 animate-slide-up">
-          <AlertCircle className="w-5 h-5 text-error-600 shrink-0 mt-0.5" />
-          <p className="text-sm text-error-700 font-medium">{error}</p>
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <Section icon={<Calendar className="w-4 h-4" />} title="기록 날짜" tint="#a89bb0">
@@ -137,7 +155,7 @@ export function RecordForm() {
               <img src={mediaPic} alt="스크린타임" className="w-full h-44 object-cover" />
               <button
                 type="button"
-                onClick={() => setMediaPic(null)}
+                onClick={() => { setMediaPic(null); setMediaFile(null); }}
                 className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/40 backdrop-blur text-white flex items-center justify-center active:scale-90 transition"
               >
                 <X className="w-4 h-4" />
@@ -213,14 +231,25 @@ export function RecordForm() {
             value={memo}
             onChange={(e) => setMemo(e.target.value)}
             rows={3}
-            maxLength={80}
+            maxLength={200}
             placeholder="오늘의 느낌이나 총평을 한줄 남겨보세요"
             className="w-full rounded-2xl bg-sage-50 border border-sage-100 px-4 py-3 text-sm text-sage-800 placeholder:text-sage-300 focus:outline-none focus:ring-2 focus:ring-sage-300 resize-none transition"
           />
-          <div className="text-right text-[11px] text-sage-400">{memo.length}/80</div>
+          <div className="text-right text-[11px] text-sage-400">{memo.length}/200</div>
         </Section>
 
+        {error && (
+          <div
+            ref={errorRef}
+            className="flex items-start gap-2.5 rounded-2xl bg-error-500/10 border border-error-500/20 px-4 py-3 animate-slide-up"
+          >
+            <AlertCircle className="w-5 h-5 text-error-600 shrink-0 mt-0.5" />
+            <p className="text-sm text-error-700 font-medium">{error}</p>
+          </div>
+        )}
+
         <button
+          ref={submitRef}
           type="submit"
           disabled={submitting}
           className="btn-base w-full h-14 bg-gradient-to-br from-sage-500 to-sage-600 text-white text-[15px] shadow-float hover:brightness-[1.04] mt-2"
