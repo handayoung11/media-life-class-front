@@ -71,14 +71,14 @@ export interface DashboardResponse {
 }
 
 export interface RecordPayload {
-  date: string;
+  melibalDate: string;
   mediaMin: number;
-  exerciseMin: number;
+  exerMin: number;
   studyMin: number;
-  exerciseType?: string;
-  studyType?: string;
-  mediaNote?: string;
-  comment?: string;
+  exer?: string;
+  study?: string;
+  media?: string;
+  memo?: string;
 }
 
 export interface RecordResponse {

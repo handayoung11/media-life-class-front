@@ -13,16 +13,17 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { RecordPayload, RecordResponse, todayKey } from '@/lib/types';
+import { AxiosError } from 'axios';
 
 export function RecordForm() {
-  const [mediaPhoto, setMediaPhoto] = useState<string | null>(null);
+  const [mediaPic, setMediaPic] = useState<string | null>(null);
   const [mediaMin, setMediaMin] = useState('');
-  const [mediaNote, setMediaNote] = useState('');
-  const [exText, setExText] = useState('');
-  const [exMin, setExMin] = useState('');
-  const [studyText, setStudyText] = useState('');
+  const [media, setMedia] = useState('');
+  const [exer, setExer] = useState('');
+  const [exerMin, setExerMin] = useState('');
+  const [study, setStudy] = useState('');
   const [studyMin, setStudyMin] = useState('');
-  const [comment, setComment] = useState('');
+  const [memo, setMemo] = useState('');
   const [date, setDate] = useState(todayKey());
   const [toast, setToast] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +34,7 @@ export function RecordForm() {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = () => setMediaPhoto(reader.result as string);
+      reader.onload = () => setMediaPic(reader.result as string);
       reader.readAsDataURL(file);
     }
   };
@@ -43,33 +44,33 @@ export function RecordForm() {
     setError(null);
 
     const payload: RecordPayload = {
-      date,
+      melibalDate: date,
       mediaMin: clamp(mediaMin),
-      exerciseMin: clamp(exMin),
+      exerMin: clamp(exerMin),
       studyMin: clamp(studyMin),
-      exerciseType: exText.trim() || undefined,
-      studyType: studyText.trim() || undefined,
-      mediaNote: mediaNote.trim() || undefined,
-      comment: comment.trim() || undefined,
+      exer: exer.trim() || undefined,
+      study: study.trim() || undefined,
+      media: media.trim() || undefined,
+      memo: memo.trim() || undefined,
     };
 
-    if (payload.mediaMin === 0 && payload.exerciseMin === 0 && payload.studyMin === 0) {
+    if (payload.mediaMin === 0 && payload.exerMin === 0 && payload.studyMin === 0) {
       setError('최소 한 항목의 시간을 입력해 주세요.');
       return;
     }
 
     try {
       setSubmitting(true);
-      await api.post<RecordResponse>('/api/records', payload);
+      await api.post<RecordResponse>('/miracle', payload);
       setToast(true);
-      setMediaPhoto(null);
+      setMediaPic(null);
       setMediaMin('');
-      setMediaNote('');
-      setExText('');
-      setExMin('');
-      setStudyText('');
+      setMedia('');
+      setExer('');
+      setExerMin('');
+      setStudy('');
       setStudyMin('');
-      setComment('');
+      setMemo('');
       setDate(todayKey());
       setTimeout(() => {
         setToast(false);
@@ -77,7 +78,7 @@ export function RecordForm() {
       }, 1500);
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : '기록 저장에 실패했습니다. 다시 시도해 주세요.';
+        err instanceof AxiosError && err.response?.data ? err.response.data : '기록 저장에 실패했습니다. 다시 시도해 주세요.';
       setError(message);
     } finally {
       setSubmitting(false);
@@ -87,7 +88,7 @@ export function RecordForm() {
   return (
     <div className="px-5 pt-6 pb-28 animate-fade-in">
       <header className="mb-5">
-        <h2 className="font-display text-xl font-semibold text-sage-800">기록하기</h2>
+        <h2 className="font-display text-xl font-semibold text-sage-800">미디어 라이프 밸런스</h2>
         <p className="text-xs text-sage-400 mt-0.5">하루를 돌아보고 미라밸을 채워보세요</p>
       </header>
 
@@ -101,7 +102,6 @@ export function RecordForm() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <Section icon={<Calendar className="w-4 h-4" />} title="기록 날짜" tint="#a89bb0">
           <div className="space-y-1.5">
-            <label className="text-[11px] text-sage-400 font-medium">어떤 날의 기록인가요?</label>
             <input
               type="date"
               value={date}
@@ -132,12 +132,12 @@ export function RecordForm() {
             className="hidden"
           />
 
-          {mediaPhoto ? (
+          {mediaPic ? (
             <div className="relative rounded-2xl overflow-hidden border border-sage-100 group">
-              <img src={mediaPhoto} alt="스크린타임" className="w-full h-44 object-cover" />
+              <img src={mediaPic} alt="스크린타임" className="w-full h-44 object-cover" />
               <button
                 type="button"
-                onClick={() => setMediaPhoto(null)}
+                onClick={() => setMediaPic(null)}
                 className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/40 backdrop-blur text-white flex items-center justify-center active:scale-90 transition"
               >
                 <X className="w-4 h-4" />
@@ -165,28 +165,28 @@ export function RecordForm() {
           />
 
           <TextArea
-            label="미디어 메모"
-            value={mediaNote}
-            onChange={setMediaNote}
+            label="미디어 내용"
+            value={media}
+            onChange={setMedia}
             rows={3}
             maxLength={200}
-            placeholder="게임, 태블릿, 유튜브 등 추가로 기록할 미디어 활동을 자유롭게 적어보세요"
+            placeholder="예) 쇼츠 30분, 릴스 20분"
           />
         </Section>
 
         <Section icon={<Dumbbell className="w-4 h-4" />} title="운동 기록" tint="#5d8a52">
           <TextArea
             label="운동 내용"
-            value={exText}
-            onChange={setExText}
+            value={exer}
+            onChange={setExer}
             rows={3}
             maxLength={200}
-            placeholder={'여러 활동을 한 줄씩 적어보세요\n예) 헬스 30분, 산책 20분, 스트레칭'}
+            placeholder={'예) 헬스 30분, 산책 20분, 스트레칭'}
           />
           <TimeInput
             label="운동 시간"
-            value={exMin}
-            onChange={setExMin}
+            value={exerMin}
+            onChange={setExerMin}
             placeholder="예) 45"
           />
         </Section>
@@ -194,11 +194,11 @@ export function RecordForm() {
         <Section icon={<BookOpen className="w-4 h-4" />} title="공부 기록" tint="#7ba6c7">
           <TextArea
             label="공부 내용"
-            value={studyText}
-            onChange={setStudyText}
+            value={study}
+            onChange={setStudy}
             rows={3}
             maxLength={200}
-            placeholder={'여러 활동을 한 줄씩 적어보세요\n예) 전공 과목, 자격증, 독서 30분'}
+            placeholder={'예) 전공 과목, 자격증, 독서 30분'}
           />
           <TimeInput
             label="집중 시간"
@@ -210,14 +210,14 @@ export function RecordForm() {
 
         <Section icon={<MessageCircle className="w-4 h-4" />} title="한줄 코멘트" tint="#d9a441">
           <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
+            value={memo}
+            onChange={(e) => setMemo(e.target.value)}
             rows={3}
             maxLength={80}
             placeholder="오늘의 느낌이나 총평을 한줄 남겨보세요"
             className="w-full rounded-2xl bg-sage-50 border border-sage-100 px-4 py-3 text-sm text-sage-800 placeholder:text-sage-300 focus:outline-none focus:ring-2 focus:ring-sage-300 resize-none transition"
           />
-          <div className="text-right text-[11px] text-sage-400">{comment.length}/80</div>
+          <div className="text-right text-[11px] text-sage-400">{memo.length}/80</div>
         </Section>
 
         <button
