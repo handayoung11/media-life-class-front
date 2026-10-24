@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Target, Pencil, Check, LogOut, Settings, ChevronRight, AlertCircle } from 'lucide-react';
 import { api } from '@/lib/api';
-import { User, MyPageResponse } from '@/lib/types';
+import { useUser, profileImageUrl } from '@/lib/user-context';
+import { MyPageResponse } from '@/lib/types';
 
 interface MyPageProps {
   onLogout: () => void;
 }
 
 export function MyPage({ onLogout }: MyPageProps) {
+  const { user, refresh: refreshUser } = useUser();
   const [data, setData] = useState<MyPageResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +23,7 @@ export function MyPage({ onLogout }: MyPageProps) {
       setLoading(true);
       const res = await api.get<MyPageResponse>('/miracle/mypage');
       setData(res.data);
-      const goal = res.data.summary.goalMediaMin || res.data.user.goalMediaMin || 120;
+      const goal = res.data.summary.goalMediaMin || user?.mediaGoal || 60;
       setGoalH(String(Math.floor(goal / 60)));
       setGoalM(String(goal % 60));
       setError(null);
@@ -44,13 +46,10 @@ export function MyPage({ onLogout }: MyPageProps) {
       await api.put('/api/user/goal', { goalMediaMin: goal });
       setData((prev) =>
         prev
-          ? {
-              ...prev,
-              summary: { ...prev.summary, goalMediaMin: goal },
-              user: { ...prev.user, goalMediaMin: goal },
-            }
+          ? { ...prev, summary: { ...prev.summary, goalMediaMin: goal } }
           : prev
       );
+      refreshUser();
       setEditing(false);
     } catch {
       setError('목표 저장에 실패했습니다.');
@@ -69,7 +68,7 @@ export function MyPage({ onLogout }: MyPageProps) {
     );
   }
 
-  if (error || !data) {
+  if (error || !data || !user) {
     return (
       <div className="px-5 pt-6 pb-28 animate-fade-in">
         <div className="card p-6 flex flex-col items-center gap-3 text-center">
@@ -86,8 +85,8 @@ export function MyPage({ onLogout }: MyPageProps) {
     );
   }
 
-  const user: User = data.user;
-  const goalMediaMin = data.summary.goalMediaMin || user.goalMediaMin || 120;
+  const goalMediaMin = data.summary.goalMediaMin || user.mediaGoal || 60;
+  const avatarUrl = profileImageUrl(user.profile);
 
   return (
     <div className="px-5 pt-6 pb-28 animate-fade-in space-y-5">
@@ -97,9 +96,9 @@ export function MyPage({ onLogout }: MyPageProps) {
       </header>
 
       <section className="card p-5 flex items-center gap-4 animate-scale-in">
-        {user.profileImageUrl ? (
+        {avatarUrl ? (
           <img
-            src={user.profileImageUrl}
+            src={avatarUrl}
             alt={user.nickname}
             className="w-16 h-16 rounded-3xl object-cover shadow-soft"
           />
@@ -112,7 +111,6 @@ export function MyPage({ onLogout }: MyPageProps) {
           <p className="font-display text-lg font-semibold text-sage-800 truncate">
             {user.nickname}
           </p>
-          <p className="text-xs text-sage-400 truncate">{user.email}</p>
           <span className="inline-flex items-center gap-1 mt-1.5 rounded-full bg-sage-100 px-2.5 py-0.5 text-[11px] font-medium text-sage-700">
             <span className="w-1.5 h-1.5 rounded-full bg-sage-500" />
             미라클 클럽 멤버

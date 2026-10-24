@@ -29,19 +29,6 @@ export interface FeedPost {
   timeAgo: string;
 }
 
-export interface User {
-  nickname: string;
-  email: string;
-  profileImageUrl: string | null;
-  goalMediaMin: number;
-}
-
-export interface MockData {
-  user: User;
-  records: DayRecord[];
-  feed: FeedPost[];
-}
-
 // ---- Backend API response shapes ----
 
 export interface DashboardSummary {
@@ -62,7 +49,6 @@ export interface DashboardRecentRecord {
 }
 
 export interface DashboardResponse {
-  user: User;
   summary: DashboardSummary;
   today: DashboardRecentRecord | null;
   recentRecords: DashboardRecentRecord[];
@@ -70,7 +56,6 @@ export interface DashboardResponse {
 }
 
 export interface MyPageResponse {
-  user: User;
   summary: DashboardSummary;
 }
 

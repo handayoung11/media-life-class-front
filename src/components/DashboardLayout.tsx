@@ -7,12 +7,14 @@ import { ClubFeed } from '@/components/ClubFeed';
 import { MyPage } from '@/components/MyPage';
 import { LoginPromptModal } from '@/components/LoginPromptModal';
 import { isLoggedIn, logout } from '@/lib/api';
+import { useUser } from '@/lib/user-context';
 
 const GUEST_ALLOWED: TabKey = 'club';
 
 export function DashboardLayout() {
   const [searchParams, setSearchParams] = useSearchParams();
   const loggedIn = isLoggedIn();
+  const { clear: clearUser } = useUser();
 
   const [tab, setTab] = useState<TabKey>(() => {
     const param = searchParams.get('tab') as TabKey | null;
@@ -62,6 +64,7 @@ export function DashboardLayout() {
   };
 
   const handleLogout = () => {
+    clearUser();
     logout();
     navigate('/login', { replace: true });
   };

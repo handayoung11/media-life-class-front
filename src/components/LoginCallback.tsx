@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Leaf } from 'lucide-react';
+import { useUser } from '@/lib/user-context';
 
 export function LoginCallback() {
   const navigate = useNavigate();
+  const { refresh } = useUser();
   const handled = useRef(false);
 
   useEffect(() => {
@@ -15,11 +17,11 @@ export function LoginCallback() {
 
     if (token) {
       localStorage.setItem('token', token);
-      navigate('/dashboard', { replace: true });
+      refresh().then(() => navigate('/dashboard', { replace: true }));
     } else {
       navigate('/login', { replace: true });
     }
-  }, [navigate]);
+  }, [navigate, refresh]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#eef1ea]">
