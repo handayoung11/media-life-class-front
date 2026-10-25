@@ -106,6 +106,9 @@ export function isLoggedIn(): boolean {
 }
 
 export function logout(): void {
+  axios.post(`${BASE_URL}/logout`, {}).catch(e => {
+    console.error('Logout request failed:', e);
+  });
   localStorage.removeItem('token');
   window.location.replace('/login');
 }
