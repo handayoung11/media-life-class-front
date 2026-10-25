@@ -1,5 +1,8 @@
-import { useEffect, useState } from 'react';
-import { Target, Pencil, Check, LogOut, Settings, ChevronRight, AlertCircle } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import {
+  Target, Pencil, Check, LogOut, Settings, ChevronRight, AlertCircle,
+  Camera, Trash2,
+} from 'lucide-react';
 import { api } from '@/lib/api';
 import { useUser, profileImageUrl } from '@/lib/user-context';
 
@@ -11,10 +14,18 @@ export function MyPage({ onLogout }: MyPageProps) {
   const { user, refresh: refreshUser } = useUser();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [editing, setEditing] = useState(false);
-  const [goalH, setGoalH] = useState('2');
+
+  const [editingGoal, setEditingGoal] = useState(false);
+  const [goalH, setGoalH] = useState('1');
   const [goalM, setGoalM] = useState('0');
   const [savingGoal, setSavingGoal] = useState(false);
+
+  const [editingName, setEditingName] = useState(false);
+  const [nickname, setNickname] = useState('');
+  const [savingName, setSavingName] = useState(false);
+
+  const [savingPhoto, setSavingPhoto] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const fetchData = async () => {
     try {
@@ -22,6 +33,7 @@ export function MyPage({ onLogout }: MyPageProps) {
       const goal = user?.mediaGoal ?? 60;
       setGoalH(String(Math.floor(goal / 60)));
       setGoalM(String(goal % 60));
+      if (user) setNickname(user.nickname);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : '내 정보를 불러오지 못했습니다.');
@@ -34,18 +46,72 @@ export function MyPage({ onLogout }: MyPageProps) {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (user) setNickname(user.nickname);
+  }, [user]);
+
   const saveGoal = async () => {
     const m = (parseInt(goalH || '0', 10) || 0) * 60 + (parseInt(goalM || '0', 10) || 0);
     const mediaGoal = Math.max(15, m);
     try {
       setSavingGoal(true);
       await api.patch('/user/me', { mediaGoal });
-      refreshUser();
-      setEditing(false);
+      await refreshUser();
+      setEditingGoal(false);
     } catch {
       setError('목표 저장에 실패했습니다.');
     } finally {
       setSavingGoal(false);
+    }
+  };
+
+  const saveNickname = async () => {
+    const trimmed = nickname.trim();
+    if (trimmed.length < 1) return;
+    try {
+      setSavingName(true);
+      await api.patch('/user/me', { nickname: trimmed });
+      await refreshUser();
+      setEditingName(false);
+    } catch {
+      setError('닉네임 저장에 실패했습니다.');
+    } finally {
+      setSavingName(false);
+    }
+  };
+
+  const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    void uploadPhoto(file);
+    e.target.value = '';
+  };
+
+  const uploadPhoto = async (file: File) => {
+    try {
+      setSavingPhoto(true);
+      const formData = new FormData();
+      formData.append('profile', file);
+      await api.patch('/user/me', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      await refreshUser();
+    } catch {
+      setError('사진 변경에 실패했습니다.');
+    } finally {
+      setSavingPhoto(false);
+    }
+  };
+
+  const removePhoto = async () => {
+    try {
+      setSavingPhoto(true);
+      await api.patch('/user/me', { profile: null });
+      await refreshUser();
+    } catch {
+      setError('사진 제거에 실패했습니다.');
+    } finally {
+      setSavingPhoto(false);
     }
   };
 
@@ -83,31 +149,104 @@ export function MyPage({ onLogout }: MyPageProps) {
     <div className="px-5 pt-6 pb-28 animate-fade-in space-y-5">
       <header className="flex items-center justify-between">
         <h2 className="font-display text-xl font-semibold text-sage-800">마이페이지</h2>
+        <Settings className="w-5 h-5 text-sage-400" />
       </header>
 
-      <section className="card p-5 flex items-center gap-4 animate-scale-in">
-        {avatarUrl ? (
-          <img
-            src={avatarUrl}
-            alt={user.nickname}
-            className="w-16 h-16 rounded-3xl object-cover shadow-soft"
-          />
-        ) : (
-          <div className="w-16 h-16 rounded-3xl bg-sage-200 flex items-center justify-center text-sage-500 text-xl font-semibold shadow-soft">
-            {user.nickname.charAt(0)}
+      {/* Profile section */}
+      <section className="card p-5 animate-scale-in">
+        <div className="flex items-center gap-4">
+          <div className="relative shrink-0">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={user.nickname}
+                className="w-16 h-16 rounded-3xl object-cover shadow-soft"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-3xl bg-sage-200 flex items-center justify-center text-sage-500 text-xl font-semibold shadow-soft">
+                {user.nickname.charAt(0)}
+              </div>
+            )}
+            {savingPhoto && (
+              <div className="absolute inset-0 rounded-3xl bg-white/70 flex items-center justify-center">
+                <span className="w-5 h-5 rounded-full border-2 border-sage-300 border-t-sage-600 animate-spin" />
+              </div>
+            )}
           </div>
-        )}
-        <div className="flex-1 min-w-0">
-          <p className="font-display text-lg font-semibold text-sage-800 truncate">
-            {user.nickname}
-          </p>
-          <span className="inline-flex items-center gap-1 mt-1.5 rounded-full bg-sage-100 px-2.5 py-0.5 text-[11px] font-medium text-sage-700">
-            <span className="w-1.5 h-1.5 rounded-full bg-sage-500" />
-            미라클 클럽 멤버
-          </span>
+          <div className="flex-1 min-w-0">
+            {editingName ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={nickname}
+                  onChange={(e) => setNickname(e.target.value)}
+                  maxLength={20}
+                  autoFocus
+                  onKeyDown={(e) => e.key === 'Enter' && saveNickname()}
+                  className="flex-1 min-w-0 rounded-xl bg-white border border-sage-200 px-3 py-2 text-sage-800 font-display font-semibold text-base focus:outline-none focus:ring-2 focus:ring-sage-300"
+                />
+                <button
+                  onClick={saveNickname}
+                  disabled={savingName}
+                  className="w-9 h-9 rounded-xl bg-sage-600 text-white flex items-center justify-center shrink-0"
+                >
+                  {savingName ? (
+                    <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <p className="font-display text-lg font-semibold text-sage-800 truncate">
+                  {user.nickname}
+                </p>
+                <button
+                  onClick={() => { setNickname(user.nickname); setEditingName(true); }}
+                  className="w-7 h-7 rounded-lg bg-sage-50 text-sage-400 flex items-center justify-center shrink-0 hover:bg-sage-100 hover:text-sage-600 transition"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+            <span className="inline-flex items-center gap-1 mt-1.5 rounded-full bg-sage-100 px-2.5 py-0.5 text-[11px] font-medium text-sage-700">
+              <span className="w-1.5 h-1.5 rounded-full bg-sage-500" />
+              미라클 클럽 멤버
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-4 flex items-center gap-2">
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            onChange={handlePhoto}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileRef.current?.click()}
+            disabled={savingPhoto}
+            className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-sage-50 text-sage-700 text-xs font-medium py-2.5 hover:bg-sage-100 transition no-tap-highlight"
+          >
+            <Camera className="w-3.5 h-3.5" />
+            {avatarUrl ? '사진 변경' : '사진 등록'}
+          </button>
+          {avatarUrl && (
+            <button
+              onClick={removePhoto}
+              disabled={savingPhoto}
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-error-500/5 text-error-600 text-xs font-medium py-2.5 px-3.5 hover:bg-error-500/10 transition no-tap-highlight"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              제거
+            </button>
+          )}
         </div>
       </section>
 
+      {/* Goal section */}
       <section className="card p-5 animate-slide-up" style={{ animationDelay: '0.2s' }}>
         <div className="flex items-center gap-2 mb-4">
           <span className="w-7 h-7 rounded-xl bg-accent-amber/15 text-accent-amber flex items-center justify-center">
@@ -116,7 +255,7 @@ export function MyPage({ onLogout }: MyPageProps) {
           <h3 className="font-display text-base font-semibold text-sage-800">나의 미라밸 목표</h3>
         </div>
 
-        {editing ? (
+        {editingGoal ? (
           <div className="space-y-3">
             <p className="text-xs text-sage-500">하루 미디어 사용 제한 시간</p>
             <div className="flex items-center gap-2">
@@ -138,7 +277,7 @@ export function MyPage({ onLogout }: MyPageProps) {
                 )}
               </button>
               <button
-                onClick={() => setEditing(false)}
+                onClick={() => setEditingGoal(false)}
                 className="btn-base flex-1 h-11 bg-sage-50 text-sage-600 text-sm"
               >
                 취소
@@ -147,7 +286,7 @@ export function MyPage({ onLogout }: MyPageProps) {
           </div>
         ) : (
           <button
-            onClick={() => setEditing(true)}
+            onClick={() => setEditingGoal(true)}
             className="w-full flex items-center justify-between rounded-2xl bg-sage-50 px-4 py-3.5 no-tap-highlight hover:bg-sage-100 transition"
           >
             <div className="text-left">

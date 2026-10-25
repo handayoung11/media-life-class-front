@@ -17,7 +17,13 @@ export function LoginCallback() {
 
     if (token) {
       localStorage.setItem('token', token);
-      refresh().then(() => navigate('/dashboard', { replace: true }));
+      refresh().then(() => {
+        if (!localStorage.getItem('onboarded')) {
+          navigate('/onboarding', { replace: true });
+        } else {
+          navigate('/dashboard', { replace: true });
+        }
+      });
     } else {
       navigate('/login', { replace: true });
     }
