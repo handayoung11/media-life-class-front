@@ -1,13 +1,5 @@
 export type Category = 'media' | 'exercise' | 'study';
 
-export interface DayRecord {
-  date: string;
-  mediaMin: number;
-  exerciseMin: number;
-  studyMin: number;
-  comment: string;
-}
-
 export interface Comment {
   id: string;
   author: string;
@@ -32,12 +24,8 @@ export interface FeedPost {
 // ---- Backend API response shapes ----
 
 export interface DashboardSummary {
-  totalMediaMin: number;
-  totalExerciseMin: number;
-  totalStudyMin: number;
   totalRecords: number;
   streakDays: number;
-  goalMediaMin: number;
 }
 
 export interface DashboardRecentRecord {
@@ -45,14 +33,13 @@ export interface DashboardRecentRecord {
   mediaMin: number;
   exerciseMin: number;
   studyMin: number;
-  comment: string;
+  memo: string;
 }
 
 export interface DashboardResponse {
   summary: DashboardSummary;
   today: DashboardRecentRecord | null;
   recentRecords: DashboardRecentRecord[];
-  weekly: { date: string; media: number; exercise: number; study: number }[];
 }
 
 export interface MyPageResponse {

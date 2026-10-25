@@ -14,7 +14,7 @@ import { DonutChart } from './DonutChart';
 import { WeeklyBarChart } from './WeeklyBarChart';
 import { api } from '@/lib/api';
 import { useUser, profileImageUrl } from '@/lib/user-context';
-import { CATEGORY_META, DashboardResponse, DashboardRecentRecord, DayRecord } from '@/lib/types';
+import { CATEGORY_META, DashboardResponse, DashboardRecentRecord } from '@/lib/types';
 
 export function DashboardHome() {
   const navigate = useNavigate();
@@ -73,7 +73,7 @@ export function DashboardHome() {
 
   const today: DashboardRecentRecord | null = data.today;
   const summary = data.summary;
-  const goalMediaMin = summary.goalMediaMin || user?.mediaGoal || 60;
+  const goalMediaMin = user?.mediaGoal || 60;
   const hasToday = !!today;
 
   const media = today?.mediaMin ?? 0;
@@ -92,7 +92,7 @@ export function DashboardHome() {
 
   const greeting = '오늘도 빛나는 갓생';
 
-  const weekly = buildWeekly(data.recentRecords, data.weekly);
+  const weekly = buildWeekly(data.recentRecords);
   const weeklyTotals = weekly.reduce(
     (a, w) => ({
       media: a.media + w.media,
@@ -150,7 +150,7 @@ export function DashboardHome() {
             <DonutChart
               slices={slices}
               size={184}
-              centerLabel={`${Math.round(total / 60)}h ${total % 60}m`}
+              centerLabel={`${Math.floor(total / 60)}h ${total % 60}m`}
               centerSub="총 기록 시간"
             />
           </div>
@@ -159,41 +159,39 @@ export function DashboardHome() {
         <EmptyTodayCard onRecord={() => navigate('/dashboard?tab=record')} />
       )}
 
-      <section
-        className={`rounded-3xl p-5 shadow-card border animate-slide-up ${
-          overGoal
-            ? 'bg-gradient-to-br from-accent-clay/15 to-cream-100 border-accent-clay/30'
-            : 'bg-gradient-to-br from-sage-100 to-cream-100 border-sage-200'
-        }`}
-        style={{ animationDelay: '0.1s' }}
-      >
-        <div className="flex items-start gap-3">
-          <div
-            className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
-              overGoal ? 'bg-accent-clay/20 text-accent-clay' : 'bg-sage-500 text-white'
+      {hasToday ? (
+        <section
+          className={`rounded-3xl p-5 shadow-card border animate-slide-up ${overGoal
+              ? 'bg-gradient-to-br from-accent-clay/15 to-cream-100 border-accent-clay/30'
+              : 'bg-gradient-to-br from-sage-100 to-cream-100 border-sage-200'
             }`}
-          >
-            {overGoal ? <Sparkles className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+          style={{ animationDelay: '0.1s' }}
+        >
+          <div className="flex items-start gap-3">
+            <div
+              className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${overGoal ? 'bg-accent-clay/20 text-accent-clay' : 'bg-sage-500 text-white'}`}>
+              {overGoal ? <Sparkles className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+            </div>
+            <div>
+              {overGoal ? (
+                <p className="font-display text-[17px] leading-snug font-semibold text-sage-800">
+                  오늘 목표보다 미디어를 {Math.round(media - goalMediaMin)}분 더 사용했어요.
+                  <br />
+                  <span className="text-sage-500 text-sm font-medium">
+                    내일은 30분 덜어내 보면 어떨까요?
+                  </span>
+                </p>
+              ) : (
+                <p className="font-display text-[17px] leading-snug font-semibold text-sage-800">
+                  오늘 미디어 사용을 {reductionPct}% 줄였습니다!
+                  <br />
+                  <span className="text-sage-500 text-sm font-medium">갓생 진행 중 🌿</span>
+                </p>
+              )}
+            </div>
           </div>
-          <div>
-            {overGoal ? (
-              <p className="font-display text-[17px] leading-snug font-semibold text-sage-800">
-                오늘 목표보다 미디어를 {Math.round(media - goalMediaMin)}분 더 사용했어요.
-                <br />
-                <span className="text-sage-500 text-sm font-medium">
-                  내일은 30분 덜어내 보면 어떨까요?
-                </span>
-              </p>
-            ) : (
-              <p className="font-display text-[17px] leading-snug font-semibold text-sage-800">
-                오늘 미디어 사용을 {reductionPct}% 줄였습니다!
-                <br />
-                <span className="text-sage-500 text-sm font-medium">갓생 진행 중 🌿</span>
-              </p>
-            )}
-          </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       <section
         className="grid grid-cols-3 gap-3 animate-slide-up"
@@ -203,7 +201,7 @@ export function DashboardHome() {
           icon={<Smartphone className="w-4 h-4" />}
           label="미디어"
           value={hasToday ? fmt(media) : '--'}
-          sub={`/ ${Math.round(goalMediaMin / 60)}시간 목표`}
+          sub={`/ ${goalMediaMin / 60}시간 목표`}
           tint={CATEGORY_META.media}
         />
         <SummaryCard
@@ -222,10 +220,10 @@ export function DashboardHome() {
         />
       </section>
 
-      {today?.comment && (
+      {today?.memo && (
         <section className="card p-4 animate-fade-in" style={{ animationDelay: '0.3s' }}>
           <p className="text-xs text-sage-400 mb-1">오늘의 한줄 코멘트</p>
-          <p className="text-[15px] text-sage-700 leading-relaxed">"{today.comment}"</p>
+          <p className="text-[15px] text-sage-700 leading-relaxed">"{today.memo}"</p>
         </section>
       )}
 
@@ -360,8 +358,8 @@ function EmptyTodayCard({ onRecord }: { onRecord: () => void }) {
       <h3 className="font-display text-lg font-semibold text-sage-800">
         오늘의 기록이 아직 없어요
       </h3>
-      <p className="mt-2 text-sm text-sage-500 leading-relaxed max-w-[16rem]">
-        지금 기록하면 오늘의 미라밸 차트가 채워져요. 첫 기록으로 갓생을 시작해 보세요!
+      <p className="mt-2 text-sm text-sage-500 leading-relaxed max-w-[16rem] break-keep">
+        지금 기록하면 오늘의 미라밸 차트가 채워져요. 기록하고 갓생을 시작해 보세요!
       </p>
       <button
         onClick={onRecord}
@@ -392,19 +390,8 @@ function WeeklyTotal({ label, value, color }: { label: string; value: number; co
 }
 
 function buildWeekly(
-  records: DayRecord[],
-  weekly: { date: string; media: number; exercise: number; study: number }[] | undefined
+  records: DashboardRecentRecord[],
 ) {
-  if (weekly && weekly.length > 0) {
-    return weekly.map((w, i) => ({
-      label: WEEKDAYS[i % 7],
-      media: w.media,
-      exercise: w.exercise,
-      study: w.study,
-      isToday: i === (new Date().getDay() + 6) % 7,
-    }));
-  }
-
   const today = new Date();
   const todayIdx = (today.getDay() + 6) % 7;
   const start = new Date(today);
