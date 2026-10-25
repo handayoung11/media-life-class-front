@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Target, Pencil, Check, LogOut, Settings, ChevronRight, AlertCircle } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useUser, profileImageUrl } from '@/lib/user-context';
-import { MyPageResponse } from '@/lib/types';
 
 interface MyPageProps {
   onLogout: () => void;
@@ -10,7 +9,6 @@ interface MyPageProps {
 
 export function MyPage({ onLogout }: MyPageProps) {
   const { user, refresh: refreshUser } = useUser();
-  const [data, setData] = useState<MyPageResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
@@ -21,9 +19,7 @@ export function MyPage({ onLogout }: MyPageProps) {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await api.get<MyPageResponse>('/miracle/mypage');
-      setData(res.data);
-      const goal = res.data.summary.goalMediaMin || user?.mediaGoal || 60;
+      const goal = user?.mediaGoal ?? 60;
       setGoalH(String(Math.floor(goal / 60)));
       setGoalM(String(goal % 60));
       setError(null);
@@ -40,15 +36,10 @@ export function MyPage({ onLogout }: MyPageProps) {
 
   const saveGoal = async () => {
     const m = (parseInt(goalH || '0', 10) || 0) * 60 + (parseInt(goalM || '0', 10) || 0);
-    const goal = Math.max(15, m);
+    const mediaGoal = Math.max(15, m);
     try {
       setSavingGoal(true);
-      await api.put('/api/user/goal', { goalMediaMin: goal });
-      setData((prev) =>
-        prev
-          ? { ...prev, summary: { ...prev.summary, goalMediaMin: goal } }
-          : prev
-      );
+      await api.patch('/user/me', { mediaGoal });
       refreshUser();
       setEditing(false);
     } catch {
@@ -68,7 +59,7 @@ export function MyPage({ onLogout }: MyPageProps) {
     );
   }
 
-  if (error || !data || !user) {
+  if (error || !user) {
     return (
       <div className="px-5 pt-6 pb-28 animate-fade-in">
         <div className="card p-6 flex flex-col items-center gap-3 text-center">
@@ -85,14 +76,13 @@ export function MyPage({ onLogout }: MyPageProps) {
     );
   }
 
-  const goalMediaMin = data.summary.goalMediaMin || user.mediaGoal || 60;
+  const goalMediaMin = user.mediaGoal || 60;
   const avatarUrl = profileImageUrl(user.profile);
 
   return (
     <div className="px-5 pt-6 pb-28 animate-fade-in space-y-5">
       <header className="flex items-center justify-between">
         <h2 className="font-display text-xl font-semibold text-sage-800">마이페이지</h2>
-        <Settings className="w-5 h-5 text-sage-400" />
       </header>
 
       <section className="card p-5 flex items-center gap-4 animate-scale-in">
@@ -181,7 +171,7 @@ export function MyPage({ onLogout }: MyPageProps) {
       </button>
 
       <div className="flex items-center justify-center gap-1 pt-1 text-[11px] text-sage-300">
-        Miracle: Media Life Class · v1.0
+        Miracle: Media Life Class
         <ChevronRight className="w-3 h-3" />
       </div>
     </div>

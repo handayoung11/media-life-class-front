@@ -42,10 +42,6 @@ export interface DashboardResponse {
   recentRecords: DashboardRecentRecord[];
 }
 
-export interface MyPageResponse {
-  summary: DashboardSummary;
-}
-
 export interface RecordPayload {
   miracleDate: string;
   mediaMin: number;
