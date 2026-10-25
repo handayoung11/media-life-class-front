@@ -73,7 +73,7 @@ export function DashboardHome() {
 
   const today: DashboardRecentRecord | null = data.today;
   const summary = data.summary;
-  const goalMediaMin = user?.mediaGoal || 60;
+  const goalMediaMin = user?.mediaGoal ?? 60;
   const hasToday = !!today;
 
   const media = today?.mediaMin ?? 0;
@@ -178,12 +178,12 @@ export function DashboardHome() {
                   오늘 목표보다 미디어를 {Math.round(media - goalMediaMin)}분 더 사용했어요.
                   <br />
                   <span className="text-sage-500 text-sm font-medium">
-                    내일은 30분 덜어내 보면 어떨까요?
+                    내일은 30분 덜어내보면 어떨까요?
                   </span>
                 </p>
               ) : (
                 <p className="font-display text-[17px] leading-snug font-semibold text-sage-800">
-                  오늘 미디어 사용을 {reductionPct}% 줄였습니다!
+                  미디어를 목표보다 {reductionPct}% 덜 사용했어요!
                   <br />
                   <span className="text-sage-500 text-sm font-medium">갓생 진행 중 🌿</span>
                 </p>
