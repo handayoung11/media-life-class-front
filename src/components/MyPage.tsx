@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useUser, profileImageUrl } from '@/lib/user-context';
+import { AxiosError } from 'axios';
 
 interface MyPageProps {
   onLogout: () => void;
@@ -52,14 +53,15 @@ export function MyPage({ onLogout }: MyPageProps) {
 
   const saveGoal = async () => {
     const m = (parseInt(goalH || '0', 10) || 0) * 60 + (parseInt(goalM || '0', 10) || 0);
-    const mediaGoal = Math.max(15, m);
+    const mediaGoal = Math.max(0, m);
     try {
       setSavingGoal(true);
       await api.patch('/user/me', { mediaGoal });
       await refreshUser();
       setEditingGoal(false);
-    } catch {
-      setError('목표 저장에 실패했습니다.');
+    } catch(err) {
+      setError(err instanceof AxiosError && err.response?.data || 
+        '미디어 목표시간 저장에 실패했습니다.');
     } finally {
       setSavingGoal(false);
     }
@@ -73,8 +75,9 @@ export function MyPage({ onLogout }: MyPageProps) {
       await api.patch('/user/me', { nickname: trimmed });
       await refreshUser();
       setEditingName(false);
-    } catch {
-      setError('닉네임 저장에 실패했습니다.');
+    } catch(err) {
+      setError(err instanceof AxiosError && err.response?.data || 
+        '닉네임 저장에 실패했습니다.');
     } finally {
       setSavingName(false);
     }
@@ -142,7 +145,7 @@ export function MyPage({ onLogout }: MyPageProps) {
     );
   }
 
-  const goalMediaMin = user.mediaGoal || 60;
+  const goalMediaMin = user.mediaGoal ?? 60;
   const avatarUrl = profileImageUrl(user.profile);
 
   return (
