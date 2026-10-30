@@ -28,7 +28,7 @@ export function DashboardHome() {
     (async () => {
       try {
         setLoading(true);
-        const res = await api.get<DashboardResponse>('/miracle');
+        const res = await api.get<DashboardResponse>('/miracle/dashboard');
         if (!cancelled) {
           setData(res.data);
           setError(null);
