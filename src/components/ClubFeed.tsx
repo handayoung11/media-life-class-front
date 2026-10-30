@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Heart, Send, MoreHorizontal, AlertCircle, LogIn } from 'lucide-react';
 import { DonutChart } from './DonutChart';
 import { api, isLoggedIn } from '@/lib/api';
-import { FeedPost, CATEGORY_META, Comment } from '@/lib/types';
+import { FeedPost, CATEGORY_META, Comment, FeedPage } from '@/lib/types';
+import { profileImageUrl } from '@/lib/user-context';
 
 export function ClubFeed() {
   const navigate = useNavigate();
@@ -11,15 +12,18 @@ export function ClubFeed() {
   const [feed, setFeed] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [hasNext, setHasNext] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         setLoading(true);
-        const res = await api.get<FeedPost[]>('/api/feed');
+        const res = await api.get<FeedPage>(`/miracle?size=5&page=${page}`);
         if (!cancelled) {
-          setFeed(res.data);
+          setFeed(res.data.feeds);
+          setHasNext(res.data.hasNext);
           setError(null);
         }
       } catch (err) {
@@ -35,7 +39,13 @@ export function ClubFeed() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [page]);
+
+  const loadNextPage = () => {
+    if (!loading && hasNext) {
+      setPage((prevPage) => prevPage + 1);
+    }
+  };
 
   const handleLike = (id: string) => {
     if (guest) return;
@@ -108,7 +118,7 @@ export function ClubFeed() {
   return (
     <div className="px-4 pt-6 pb-28 animate-fade-in">
       <header className="mb-4 px-1">
-        <h2 className="font-display text-xl font-semibold text-sage-800">미라클 클럽 피드</h2>
+        <h2 className="font-display text-xl font-semibold text-sage-800">Miracle Club</h2>
         <p className="text-xs text-sage-400 mt-0.5">함께 기적을 만드는 사람들</p>
       </header>
 
@@ -159,10 +169,10 @@ function FeedCard({
   const [draft, setDraft] = useState('');
   const slices = [
     { label: '미디어', value: post.mediaMin, color: CATEGORY_META.media.color },
-    { label: '운동', value: post.exerciseMin, color: CATEGORY_META.exercise.color },
+    { label: '운동', value: post.exerMin, color: CATEGORY_META.exercise.color },
     { label: '공부', value: post.studyMin, color: CATEGORY_META.study.color },
   ];
-  const total = post.mediaMin + post.exerciseMin + post.studyMin;
+  const total = post.mediaMin + post.exerMin + post.studyMin;
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,12 +186,17 @@ function FeedCard({
     <article className="card overflow-hidden animate-scale-in">
       <div className="flex items-center justify-between p-3.5">
         <div className="flex items-center gap-2.5">
-          <div
-            className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-semibold"
-            style={{ backgroundColor: post.avatarColor }}
-          >
-            {post.avatarInitial}
-          </div>
+          {post.avatarUrl ? (
+              <img
+                src={profileImageUrl(post.avatarUrl) || ''}
+                alt={post.author}
+                className="w-9 h-9 rounded-xl object-cover shadow-soft"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-semibold bg-sage-400">
+                {post.author.charAt(0)}
+              </div>
+            )}
           <div>
             <p className="text-sm font-semibold text-sage-800 leading-none">{post.author}</p>
             <p className="text-[11px] text-sage-400 mt-1">{post.timeAgo}</p>
@@ -195,7 +210,7 @@ function FeedCard({
           <DonutChart slices={slices} size={150} thickness={18} animate={false} />
           <div className="flex gap-3 text-[11px]">
             <Stat label="미디어" value={`${post.mediaMin}m`} color={CATEGORY_META.media.color} />
-            <Stat label="운동" value={`${post.exerciseMin}m`} color={CATEGORY_META.exercise.color} />
+            <Stat label="운동" value={`${post.exerMin}m`} color={CATEGORY_META.exercise.color} />
             <Stat label="공부" value={`${post.studyMin}m`} color={CATEGORY_META.study.color} />
           </div>
           <div className="text-center">
@@ -207,7 +222,7 @@ function FeedCard({
       </div>
 
       <div className="px-3.5 pb-2">
-        <p className="text-[13px] leading-relaxed text-sage-700">{post.caption}</p>
+        <p className="text-[13px] leading-relaxed text-sage-700">{post.memo}</p>
       </div>
 
       <div className="flex items-center justify-between px-3.5 py-2 border-t border-sage-50">
@@ -231,7 +246,7 @@ function FeedCard({
         </button>
       </div>
 
-      <div className="px-3.5 pb-3.5 space-y-2">
+      {/* <div className="px-3.5 pb-3.5 space-y-2">
         {post.comments.length > 0 && (
           <div className="space-y-1.5">
             {post.comments.map((c) => (
@@ -256,7 +271,7 @@ function FeedCard({
             <Send className="w-4 h-4" />
           </button>
         </form>
-      </div>
+      </div> */}
     </article>
   );
 }

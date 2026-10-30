@@ -9,16 +9,21 @@ export interface Comment {
 export interface FeedPost {
   id: string;
   author: string;
-  avatarColor: string;
-  avatarInitial: string;
+  avatarUrl: string;
   mediaMin: number;
-  exerciseMin: number;
+  exerMin: number;
   studyMin: number;
-  caption: string;
+  memo: string;
   likes: number;
   liked: boolean;
   comments: Comment[];
   timeAgo: string;
+}
+
+export interface FeedPage {
+  feeds: FeedPost[];
+  currentPage: number;
+  hasNext: boolean;
 }
 
 // ---- Backend API response shapes ----
