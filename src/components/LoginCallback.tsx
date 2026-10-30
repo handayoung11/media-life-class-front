@@ -14,16 +14,15 @@ export function LoginCallback() {
 
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
+    const shouldOnboard = params.get('is_onboarding');
 
     if (token) {
       localStorage.setItem('token', token);
-      refresh().then(() => {
-        if (!localStorage.getItem('onboarded')) {
-          navigate('/onboarding', { replace: true });
-        } else {
-          navigate('/dashboard', { replace: true });
-        }
-      });
+      if (shouldOnboard === 'true') {
+        navigate('/onboarding', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
     } else {
       navigate('/login', { replace: true });
     }

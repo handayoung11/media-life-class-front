@@ -21,9 +21,13 @@ export function OnboardingScreen() {
     setError(null);
     try {
       setSaving(true);
-      await api.patch('/user/me', { nickname: nickname.trim(), mediaGoal });
+      const res = await api.patch(
+        '/user/me',
+         { nickname: nickname.trim(), mediaGoal },
+         { withCredentials: true }
+      );
+      localStorage.setItem('token', res.data);
       await refresh();
-      localStorage.setItem('onboarded', 'true');
       navigate('/dashboard', { replace: true });
     } catch {
       setError('저장에 실패했습니다. 다시 시도해 주세요.');
@@ -117,17 +121,6 @@ export function OnboardingScreen() {
                 시작하기
               </>
             )}
-          </button>
-          <button
-            onClick={() => {
-              localStorage.setItem('onboarded', 'true');
-              navigate('/dashboard', { replace: true });
-            }}
-            disabled={saving}
-            className="btn-base w-full h-11 mt-2 text-sage-400 text-sm font-medium hover:text-sage-600"
-          >
-            나중에 설정하기
-            <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       </div>
