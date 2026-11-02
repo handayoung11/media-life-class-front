@@ -4,6 +4,7 @@ import { LoginPage } from '@/components/LoginPage';
 import { LoginCallback } from '@/components/LoginCallback';
 import { OnboardingScreen } from '@/components/OnboardingScreen';
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { FeedDetailPage } from '@/components/FeedDetailPage';
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
           <Route path="/login/callback" element={<LoginCallback />} />
           <Route path="/onboarding" element={<OnboardingScreen />} />
           <Route path="/dashboard/*" element={<DashboardLayout />} />
+          <Route path="/feed/:id" element={<FeedDetailPage />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>

@@ -26,6 +26,13 @@ export interface FeedPage {
   hasNext: boolean;
 }
 
+export interface FeedDetail extends FeedPost {
+  media: string | null;
+  exer: string | null;
+  study: string | null;
+  mediaPic: string | null;
+}
+
 // ---- Backend API response shapes ----
 
 export interface DashboardSummary {

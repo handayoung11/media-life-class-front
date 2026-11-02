@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Send, MoreHorizontal, AlertCircle, LogIn, Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Heart, Send, MoreHorizontal, AlertCircle, LogIn, Loader2, ChevronRight } from 'lucide-react';
 import { DonutChart } from './DonutChart';
 import { api, isLoggedIn } from '@/lib/api';
 import { FeedPost, CATEGORY_META, Comment, FeedPage } from '@/lib/types';
@@ -287,6 +288,13 @@ function FeedCard({
             응원 {post.likes}
           </span>
         </button>
+        <Link
+          to={`/feed/${post.id}`}
+          className="flex items-center gap-0.5 text-xs font-medium text-sage-500 hover:text-sage-700 transition py-1.5"
+        >
+          자세히 보기
+          <ChevronRight className="w-4 h-4" />
+        </Link>
       </div>
 
       <div className="px-3.5 pb-3.5 space-y-2">
