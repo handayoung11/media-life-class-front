@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Send, MoreHorizontal, AlertCircle, LogIn } from 'lucide-react';
+import { Heart, Send, MoreHorizontal, AlertCircle, LogIn, Loader2 } from 'lucide-react';
 import { DonutChart } from './DonutChart';
 import { api, isLoggedIn } from '@/lib/api';
 import { FeedPost, CATEGORY_META, Comment, FeedPage } from '@/lib/types';
@@ -10,41 +10,59 @@ export function ClubFeed() {
   const navigate = useNavigate();
   const guest = !isLoggedIn();
   const [feed, setFeed] = useState<FeedPost[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
+  const [attempt, setAttempt] = useState(0);
   const [hasNext, setHasNext] = useState(true);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
+    const isFirstPage = page === 0;
+    if (isFirstPage) setInitialLoading(true);
+    else setLoadingMore(true);
+
     (async () => {
       try {
-        setLoading(true);
         const res = await api.get<FeedPage>(`/miracle?size=5&page=${page}`);
-        if (!cancelled) {
-          setFeed(res.data.feeds);
-          setHasNext(res.data.hasNext);
-          setError(null);
-        }
+        if (cancelled) return;
+        setFeed((prev) => (isFirstPage ? res.data.feeds : [...prev, ...res.data.feeds]));
+        setHasNext(res.data.hasNext);
+        setError(null);
       } catch (err) {
         if (!cancelled) {
-          setError(
-            err instanceof Error ? err.message : '피드를 불러오지 못했습니다.'
-          );
+          setError(err instanceof Error ? err.message : '피드를 불러오지 못했습니다.');
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setInitialLoading(false);
+          setLoadingMore(false);
+        }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [page]);
+  }, [page, attempt]);
 
-  const loadNextPage = () => {
-    if (!loading && hasNext) {
-      setPage((prevPage) => prevPage + 1);
-    }
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || !hasNext || loadingMore || error) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) setPage((p) => p + 1);
+      },
+      { rootMargin: '200px' }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasNext, loadingMore, error, initialLoading]);
+
+  const retryLoad = () => {
+    setError(null);
+    setAttempt((a) => a + 1);
   };
 
   const handleLike = (id: string) => {
@@ -75,7 +93,7 @@ export function ClubFeed() {
     api.post(`/api/feed/${id}/comments`, { text }).catch(() => {});
   };
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="px-4 pt-6 pb-28 animate-fade-in">
         <div className="space-y-4">
@@ -87,7 +105,7 @@ export function ClubFeed() {
     );
   }
 
-  if (error) {
+  if (error && feed.length === 0) {
     return (
       <div className="px-4 pt-6 pb-28 animate-fade-in">
         <div className="card p-6 flex flex-col items-center gap-3 text-center">
@@ -151,6 +169,31 @@ export function ClubFeed() {
           />
         ))}
       </div>
+
+      {hasNext && <div ref={sentinelRef} className="h-px" />}
+
+      {loadingMore && (
+        <div className="flex justify-center py-6">
+          <Loader2 className="w-5 h-5 text-sage-400 animate-spin" />
+        </div>
+      )}
+
+      {error && (
+        <div className="card mt-4 p-4 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-accent-clay shrink-0" />
+          <p className="flex-1 min-w-0 text-xs text-sage-600">{error}</p>
+          <button
+            onClick={retryLoad}
+            className="btn-base h-9 px-4 bg-sage-600 text-white text-xs shrink-0"
+          >
+            다시 시도
+          </button>
+        </div>
+      )}
+
+      {!hasNext && (
+        <p className="text-center text-xs text-sage-400 py-6">모든 게시물을 확인했어요</p>
+      )}
     </div>
   );
 }
