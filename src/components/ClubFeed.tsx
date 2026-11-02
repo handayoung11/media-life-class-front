@@ -289,7 +289,7 @@ function FeedCard({
         </button>
       </div>
 
-      {/* <div className="px-3.5 pb-3.5 space-y-2">
+      <div className="px-3.5 pb-3.5 space-y-2">
         {post.comments.length > 0 && (
           <div className="space-y-1.5">
             {post.comments.map((c) => (
@@ -314,7 +314,7 @@ function FeedCard({
             <Send className="w-4 h-4" />
           </button>
         </form>
-      </div> */}
+      </div>
     </article>
   );
 }
