@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle, ArrowLeft, BookOpen, Dumbbell, Heart, ImageOff, Smartphone } from 'lucide-react';
 import { DonutChart } from './DonutChart';
 import { api } from '@/lib/api';
-import { CATEGORY_META, FeedDetail } from '@/lib/types';
+import { CATEGORY_META, FeedDetail, timeAgo } from '@/lib/types';
 import { profileImageUrl } from '@/lib/user-context';
 
 export function FeedDetailPage() {
@@ -148,7 +148,7 @@ function DetailContent({ detail }: { detail: FeedDetail }) {
           )}
           <div className="min-w-0">
             <p className="text-sm font-semibold text-sage-800 leading-none truncate">{detail.author}</p>
-            <p className="text-[11px] text-sage-400 mt-1">{detail.createdAt}</p>
+            <p className="text-[11px] text-sage-400 mt-1">{timeAgo(detail.createdAt)}</p>
           </div>
         </div>
         <div className="flex items-center gap-1.5 text-sage-500 shrink-0">
@@ -159,7 +159,7 @@ function DetailContent({ detail }: { detail: FeedDetail }) {
 
       <section className="card overflow-hidden">
         {photoUrl ? (
-          <img src={photoUrl} alt="스크린타임 사진" className="w-full max-h-96 object-cover" />
+          <img src={photoUrl} alt="스크린타임 사진" className="w-full max-h-96 object-contain bg-sage-50" />
         ) : (
           <div className="h-40 flex flex-col items-center justify-center gap-2 bg-sage-50 text-sage-400">
             <ImageOff className="w-6 h-6" />

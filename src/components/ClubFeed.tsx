@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Heart, Send, MoreHorizontal, AlertCircle, LogIn, Loader2, ChevronRight } from 'lucide-react';
 import { DonutChart } from './DonutChart';
 import { api, isLoggedIn } from '@/lib/api';
-import { FeedPost, CATEGORY_META, Comment, FeedPage } from '@/lib/types';
+import { FeedPost, CATEGORY_META, Comment, FeedPage, timeAgo } from '@/lib/types';
 import { profileImageUrl } from '@/lib/user-context';
 
 export function ClubFeed() {
@@ -243,7 +243,7 @@ function FeedCard({
             )}
           <div>
             <p className="text-sm font-semibold text-sage-800 leading-none">{post.author}</p>
-            <p className="text-[11px] text-sage-400 mt-1">{post.createdAt}</p>
+            <p className="text-[11px] text-sage-400 mt-1">{timeAgo(post.createdAt)}</p>
           </div>
         </div>
         <MoreHorizontal className="w-4 h-4 text-sage-300" />
