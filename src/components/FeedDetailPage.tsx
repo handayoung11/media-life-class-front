@@ -22,7 +22,7 @@ export function FeedDetailPage() {
       try {
         const res = await api.get<FeedDetail>(`/miracle/${id}`);
         if (cancelled) return;
-        if (!res.data || typeof res.data.id !== 'string') {
+        if (!res.data || typeof res.data.id !== 'number') {
           throw new Error('기록 정보를 읽을 수 없어요.');
         }
         setDetail(res.data);
