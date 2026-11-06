@@ -148,7 +148,7 @@ function DetailContent({ detail }: { detail: FeedDetail }) {
           )}
           <div className="min-w-0">
             <p className="text-sm font-semibold text-sage-800 leading-none truncate">{detail.author}</p>
-            <p className="text-[11px] text-sage-400 mt-1">{detail.timeAgo}</p>
+            <p className="text-[11px] text-sage-400 mt-1">{detail.createdAt}</p>
           </div>
         </div>
         <div className="flex items-center gap-1.5 text-sage-500 shrink-0">

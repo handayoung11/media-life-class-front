@@ -73,7 +73,7 @@ export function ClubFeed() {
         p.id === id ? { ...p, liked: !p.liked, likes: p.liked ? p.likes - 1 : p.likes + 1 } : p
       )
     );
-    api.post(`/api/feed/${id}/like`).catch(() => {
+    api.post(`/miracle/like/${id}`).catch(() => {
       setFeed((prev) =>
         prev.map((p) =>
           p.id === id ? { ...p, liked: !p.liked, likes: p.liked ? p.likes - 1 : p.likes + 1 } : p
@@ -243,7 +243,7 @@ function FeedCard({
             )}
           <div>
             <p className="text-sm font-semibold text-sage-800 leading-none">{post.author}</p>
-            <p className="text-[11px] text-sage-400 mt-1">{post.timeAgo}</p>
+            <p className="text-[11px] text-sage-400 mt-1">{post.createdAt}</p>
           </div>
         </div>
         <MoreHorizontal className="w-4 h-4 text-sage-300" />
@@ -297,7 +297,7 @@ function FeedCard({
         </Link>
       </div>
 
-      <div className="px-3.5 pb-3.5 space-y-2">
+      {/* <div className="px-3.5 pb-3.5 space-y-2">
         {post.comments.length > 0 && (
           <div className="space-y-1.5">
             {post.comments.map((c) => (
@@ -322,7 +322,7 @@ function FeedCard({
             <Send className="w-4 h-4" />
           </button>
         </form>
-      </div>
+      </div> */}
     </article>
   );
 }

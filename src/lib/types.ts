@@ -17,7 +17,7 @@ export interface FeedPost {
   likes: number;
   liked: boolean;
   comments: Comment[];
-  timeAgo: string;
+  createdAt: string;
 }
 
 export interface FeedPage {
